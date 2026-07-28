@@ -39,30 +39,30 @@ def main():
         raise FileExistsError(f"{existing} already exist; the writes append, so move them aside before rebuilding")
 
     rows = load_source_rows(config.mmlu_subjects, config.arc_split)
-    pool = assemble_pool(rows, n_items=config.n_items, seed=config.seed)
-    if len(pool) < config.n_items:
-        LOGGER.warning(f"pool is short: {len(pool)} of {config.n_items} requested")
+    build = assemble_pool(rows, n_items=config.n_items, seed=config.seed)
+    if len(build.items) < config.n_items:
+        LOGGER.warning(f"pool is short: {len(build.items)} of {config.n_items} requested")
 
-    variants = [v for item in pool for v in build_variants(item, seed=config.seed)]
-    by_source = Counter(item.source for item in pool)
+    variants = [v for item in build.items for v in build_variants(item, seed=config.seed)]
+    by_source = Counter(item.source for item in build.items)
 
-    pool_path = append_jsonl(out / f"pool_seed{config.seed}.jsonl", [item.model_dump() for item in pool])
+    pool_path = append_jsonl(out / f"pool_seed{config.seed}.jsonl", [item.model_dump() for item in build.items])
     variants_path = append_jsonl(out / f"variants_seed{config.seed}.jsonl", [v.model_dump() for v in variants])
     meta_path = write_json(
         out / f"pool_seed{config.seed}_meta.json",
         {
             "git_hash": get_git_hash(),
             "seed": config.seed,
-            "n_items": len(pool),
+            "n_items": len(build.items),
             "n_variants": len(variants),
-            "n_source_rows": len(rows),
             "mmlu_subjects": config.mmlu_subjects,
             "arc_split": config.arc_split,
+            "build_stats": build.stats,
             "items_by_source": dict(by_source.most_common()),
         },
     )
 
-    print(f"Pool: {pool_path} ({len(pool)} items)")
+    print(f"Pool: {pool_path} ({len(build.items)} items)")
     print(f"Variants: {variants_path} ({len(variants)} rows)")
     print(f"Metadata: {meta_path}")
     print(f"Subjects: {len(by_source)} distinct, top 5 {by_source.most_common(5)}")

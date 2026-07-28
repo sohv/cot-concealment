@@ -4,6 +4,9 @@
 import hashlib
 import logging
 import random
+from collections import Counter
+
+from pydantic import BaseModel
 
 from src.config import OPTIONS
 from src.data.items import Item, is_excluded_source
@@ -54,7 +57,33 @@ def normalize_arc_row(row: dict, item_id: str) -> Item | None:
 NORMALIZERS = {"mmlu": normalize_mmlu_row, "arc": normalize_arc_row}
 
 
-def assemble_pool(rows: list[tuple[dict, str]], n_items: int, seed: int) -> list[Item]:
+def drop_reason(row: dict, kind: str) -> str | None:
+    """why a row cannot enter the pool, or None if it can. separates the deliberate subject exclusion
+    from malformed rows, since lumping them together hides a source that silently contributes nothing."""
+    if kind == "mmlu":
+        if is_excluded_source(f"mmlu_{row['subject']}"):
+            return "excluded_subject"
+        if len(row["choices"]) != len(OPTIONS):
+            return "wrong_option_count"
+        if not 0 <= row["answer"] < len(OPTIONS):
+            return "answer_out_of_range"
+        return None
+    if len(row["choices"]["text"]) != len(OPTIONS) or len(row["choices"]["label"]) != len(OPTIONS):
+        return "wrong_option_count"
+    if row["answerKey"] not in row["choices"]["label"]:
+        return "answer_key_not_in_labels"
+    return None
+
+
+class PoolBuild(BaseModel):
+    items: list[Item]
+    stats: dict[str, int]
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+
+def assemble_pool(rows: list[tuple[dict, str]], n_items: int, seed: int) -> PoolBuild:
     """deduplicates on question text, shuffles under the seed, then caps. ids are assigned after the
     shuffle so pool_00000 is stable for a given seed and source set."""
     seen: set[str] = set()
@@ -68,21 +97,29 @@ def assemble_pool(rows: list[tuple[dict, str]], n_items: int, seed: int) -> list
 
     random.Random(seed).shuffle(unique)
 
-    pool: list[Item] = []
-    n_dropped = 0
+    items: list[Item] = []
+    drops: Counter = Counter()
+    n_considered = 0
     for row, kind in unique:
-        if len(pool) >= n_items:
+        if len(items) >= n_items:
             break
-        item = NORMALIZERS[kind](row, item_id=f"pool_{len(pool):05d}")
-        if item is None:
-            n_dropped += 1
+        n_considered += 1
+        reason = drop_reason(row, kind)
+        if reason:
+            drops[reason] += 1
             continue
-        pool.append(item)
+        items.append(NORMALIZERS[kind](row, item_id=f"pool_{len(items):05d}"))
 
-    LOGGER.info(
-        f"assembled {len(pool)} items, dropped {n_dropped} unnormalizable, {len(rows) - len(unique)} duplicates"
-    )
-    return pool
+    stats = {
+        "n_source_rows": len(rows),
+        "n_duplicates": len(rows) - len(unique),
+        "n_considered": n_considered,
+        "n_kept": len(items),
+        "n_dropped": sum(drops.values()),
+        **{f"dropped_{reason}": count for reason, count in sorted(drops.items())},
+    }
+    LOGGER.info(f"assembled pool: {stats}")
+    return PoolBuild(items=items, stats=stats)
 
 
 def load_source_rows(mmlu_subjects: str = "all", arc_split: str = "train") -> list[tuple[dict, str]]:

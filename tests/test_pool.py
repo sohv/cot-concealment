@@ -91,26 +91,41 @@ def test_non_computational_sources_are_kept(source):
 
 def test_assemble_pool_assigns_stable_sequential_ids():
     rows = [(MMLU_ROW | {"question": f"q{i}"}, "mmlu") for i in range(5)]
-    pool = assemble_pool(rows, n_items=5, seed=42)
-    assert [it.item_id for it in pool] == [f"pool_{i:05d}" for i in range(5)]
+    build = assemble_pool(rows, n_items=5, seed=42)
+    assert [it.item_id for it in build.items] == [f"pool_{i:05d}" for i in range(5)]
 
 
 def test_assemble_pool_deduplicates_on_question_text():
     rows = [(MMLU_ROW, "mmlu"), (MMLU_ROW, "mmlu"), (MMLU_ROW | {"question": "other"}, "mmlu")]
-    pool = assemble_pool(rows, n_items=10, seed=42)
-    assert len(pool) == 2
+    build = assemble_pool(rows, n_items=10, seed=42)
+    assert len(build.items) == 2
+    assert build.stats["n_duplicates"] == 1
 
 
 def test_assemble_pool_is_deterministic_and_respects_the_cap():
     rows = [(MMLU_ROW | {"question": f"q{i}"}, "mmlu") for i in range(50)]
     first = assemble_pool(rows, n_items=10, seed=42)
     second = assemble_pool(rows, n_items=10, seed=42)
-    assert len(first) == 10
-    assert [it.question for it in first] == [it.question for it in second]
+    assert len(first.items) == 10
+    assert [it.question for it in first.items] == [it.question for it in second.items]
 
 
 def test_assemble_pool_shuffles_before_capping():
     rows = [(MMLU_ROW | {"question": f"q{i}"}, "mmlu") for i in range(50)]
-    assert [it.question for it in assemble_pool(rows, n_items=10, seed=1)] != [
-        it.question for it in assemble_pool(rows, n_items=10, seed=2)
+    assert [it.question for it in assemble_pool(rows, n_items=10, seed=1).items] != [
+        it.question for it in assemble_pool(rows, n_items=10, seed=2).items
     ]
+
+
+def test_assemble_pool_reports_drops_by_reason():
+    # an excluded subject and a malformed row must not be lumped into one number.
+    rows = [
+        (MMLU_ROW | {"question": "a", "subject": "elementary_mathematics"}, "mmlu"),
+        (MMLU_ROW | {"question": "b", "answer": 9}, "mmlu"),
+        (MMLU_ROW | {"question": "c"}, "mmlu"),
+    ]
+    stats = assemble_pool(rows, n_items=10, seed=42).stats
+    assert stats["dropped_excluded_subject"] == 1
+    assert stats["dropped_answer_out_of_range"] == 1
+    assert stats["n_kept"] == 1
+    assert stats["n_dropped"] == 2

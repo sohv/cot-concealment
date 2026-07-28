@@ -1,11 +1,18 @@
 {
-  "git_hash": "7dcd8e0f",
+  "git_hash": "3b75111e",
   "seed": 42,
   "n_items": 300,
   "n_variants": 1200,
-  "n_source_rows": 15161,
   "mmlu_subjects": "all",
   "arc_split": "train",
+  "build_stats": {
+    "n_source_rows": 15161,
+    "n_duplicates": 178,
+    "n_considered": 398,
+    "n_kept": 300,
+    "n_dropped": 98,
+    "dropped_excluded_subject": 98
+  },
   "items_by_source": {
     "mmlu_professional_law": 35,
     "mmlu_miscellaneous": 31,
