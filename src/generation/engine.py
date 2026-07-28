@@ -84,3 +84,14 @@ def to_generations(output, tok, run: RunConfig) -> list[Generation]:
 def generate(engine, prompts: list[str], run: RunConfig) -> list:
     LOGGER.info(f"generating {len(prompts)} prompts x {run.n_samples} samples")
     return engine.generate(prompts, sampling_params(run))
+
+
+def generate_chunked(engine, prompts: list[str], run: RunConfig, chunk_size: int = 100):
+    """yields (offset, outputs) per chunk so callers can persist as they go. vllm's generate blocks
+    until the whole batch finishes, so an unchunked multi hour run loses everything if it dies."""
+    for start in range(0, len(prompts), chunk_size):
+        chunk = prompts[start : start + chunk_size]
+        LOGGER.info(
+            f"chunk {start // chunk_size + 1} of {-(-len(prompts) // chunk_size)}, prompts {start}-{start + len(chunk)}"
+        )
+        yield start, engine.generate(chunk, sampling_params(run))

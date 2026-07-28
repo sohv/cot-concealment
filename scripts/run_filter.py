@@ -11,7 +11,7 @@ import simple_parsing
 from dotenv import load_dotenv
 
 from src.config import GATES, RUN, SCORING
-from src.generation.engine import generate, load_engine, to_generations
+from src.generation.engine import generate_chunked, load_engine, to_generations
 from src.generation.prompts import ARMS, build_chat, build_user_message, prompt_fingerprint
 from src.metrics.filter import filter_report, score_filter_item
 from src.metrics.scoring import Trace
@@ -30,6 +30,8 @@ class Config:
     revision: str = ""
     engine_version: str = ""
     arm: str = "C3_neutral_private"
+    cue_name: str = ""
+    chunk_size: int = 100
     num_tasks: int | None = None
     gpu_memory_utilization: float = 0.90
     seed: int = 42
@@ -68,28 +70,34 @@ def main():
     tok = AutoTokenizer.from_pretrained(run.model, revision=run.revision or None)
     engine = load_engine(run, config.gpu_memory_utilization)
 
+    cue_name = config.cue_name or run.cue_name
     prompts = [
-        build_chat(tok, ARMS[config.arm], build_user_message(r["question"], r["options"], r["cued_option"]))
+        build_chat(tok, ARMS[config.arm], build_user_message(r["question"], r["options"], r["cued_option"], cue_name))
         for r in rows
     ]
-    outputs = generate(engine, prompts, run)
 
-    fingerprint = prompt_fingerprint(config.arm)
+    fingerprint = prompt_fingerprint(config.arm, cue_name)
     traces_by_item: dict[str, dict[str, list[Trace]]] = defaultdict(dict)
-    for row, output in zip(rows, outputs):
-        generations = to_generations(output, tok, run)
-        append_jsonl(
-            generations_path,
-            [
+    for offset, outputs in generate_chunked(engine, prompts, run, config.chunk_size):
+        records = []
+        for row, output in zip(rows[offset : offset + len(outputs)], outputs):
+            generations = to_generations(output, tok, run)
+            records += [
                 row
                 | g.model_dump()
-                | {"stage": "filter", "arm": config.arm, "run_id": run_id, "prompt_fingerprint": fingerprint}
+                | {
+                    "stage": "filter",
+                    "arm": config.arm,
+                    "cue_name": cue_name,
+                    "run_id": run_id,
+                    "prompt_fingerprint": fingerprint,
+                }
                 for g in generations
-            ],
-        )
-        traces_by_item[row["item_id"]][row["variant"]] = [
-            Trace(parsed_answer=g.parsed_answer, parse_ok=g.parse_ok, truncated=g.truncated) for g in generations
-        ]
+            ]
+            traces_by_item[row["item_id"]][row["variant"]] = [
+                Trace(parsed_answer=g.parsed_answer, parse_ok=g.parse_ok, truncated=g.truncated) for g in generations
+            ]
+        append_jsonl(generations_path, records)
 
     by_item = {r["item_id"]: r for r in rows if r["variant"] == "V1"}
     results = [
@@ -115,6 +123,7 @@ def main():
             "run_id": run_id,
             "git_hash": get_git_hash(),
             "arm": config.arm,
+            "cue_name": cue_name,
             "prompt_fingerprint": fingerprint,
             "run": run.model_dump(),
             "report": report,
