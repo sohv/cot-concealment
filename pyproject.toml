@@ -1,0 +1,49 @@
+[project]
+name = "cue-swap"
+version = "0.1.0"
+description = "Cue swap validation experiment: separating hint mention from hint influence"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "pydantic>=2.7",
+    "scipy",
+    "simple-parsing",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pre-commit",
+    "ruff",
+]
+judge = ["anthropic"]
+# the inference stack is installed separately on the gpu box, since vllm and torch must match the
+# local cuda build: uv pip install "vllm==<pin>" transformers
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore = ["E501", "E402", "E741", "F841", "F403", "F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.0",
+]
