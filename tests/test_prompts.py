@@ -5,6 +5,7 @@ import pytest
 from src.config import RUN
 from src.generation.prompts import (
     ARMS,
+    CUE_BLOCKS,
     SOFT_SWITCHES,
     assert_no_soft_switch,
     build_chat,
@@ -113,3 +114,15 @@ def test_prompt_fingerprint_is_stable_and_arm_sensitive():
     a = prompt_fingerprint("C3_neutral_private")
     assert a == prompt_fingerprint("C3_neutral_private")
     assert a != prompt_fingerprint("C0_bare")
+
+
+def test_prompt_fingerprint_distinguishes_cues():
+    # the cue is the variable under test now, so it has to be inside the fingerprint.
+    assert prompt_fingerprint("C3_neutral_private", "expert") != prompt_fingerprint("C3_neutral_private", "answer_key")
+
+
+@pytest.mark.parametrize("cue_name", list(CUE_BLOCKS))
+def test_every_cue_names_the_option_and_carries_no_soft_switch(cue_name):
+    msg = build_user_message(QUESTION, OPTIONS, cued_option="B", cue_name=cue_name)
+    assert "(B)" in msg or '"B"' in msg
+    assert_no_soft_switch(msg)
