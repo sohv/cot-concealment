@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Cue swap validation experiment: separating hint mention from hint influence"
 requires-python = ">=3.10"
 dependencies = [
-    "datasets>=5.0.1",
+    "datasets<4",
+    "huggingface-hub>=0.30,<1.0",
     "numpy",
     "pandas",
     "pyarrow",
@@ -13,6 +14,8 @@ dependencies = [
     "scipy",
     "simple-parsing",
     "tqdm",
+    "transformers==4.51.3",
+    "vllm==0.8.5.post1",
 ]
 
 [project.optional-dependencies]

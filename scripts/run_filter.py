@@ -1,6 +1,6 @@
 # behavioural filter: samples V0 and V1 eight times per item and keeps items answered correctly without
 # a hint and switched to the hint with one. also yields the first truncation and parse failure rates.
-# uv run -m scripts.run_filter --variants_path data/processed/variants_seed42.jsonl --output_dir results/raw/filter_v1 --model_id Qwen/Qwen3-14B --seed 42
+# uv run -m scripts.run_filter --variants_path data/processed/variants_seed42.jsonl --output_dir results/raw/filter_v1 --model_id Qwen/Qwen3-8B --seed 42
 
 import logging
 from collections import defaultdict
@@ -26,7 +26,7 @@ FILTER_VARIANTS = ("V0", "V1")
 class Config:
     variants_path: str = ""
     output_dir: str = "results/raw/filter_v1"
-    model_id: str = "Qwen/Qwen3-14B"
+    model_id: str = "Qwen/Qwen3-8B"
     revision: str = ""
     engine_version: str = ""
     arm: str = "C3_neutral_private"
@@ -47,14 +47,13 @@ def main():
     if generations_path.exists():
         raise FileExistsError(f"{generations_path} exists; the write appends, so use a new output_dir")
 
-    run = RUN.model_copy(
-        update={
-            "model": config.model_id,
-            "revision": config.revision,
-            "engine_version": config.engine_version,
-            "seed": config.seed,
-        }
-    )
+    # only override the frozen pins when explicitly given, or an empty cli default silently unpins them.
+    update = {"model": config.model_id, "seed": config.seed}
+    if config.revision:
+        update["revision"] = config.revision
+    if config.engine_version:
+        update["engine_version"] = config.engine_version
+    run = RUN.model_copy(update=update)
     run_id = out.name
 
     rows = [r for r in read_jsonl(config.variants_path) if r["variant"] in FILTER_VARIANTS]

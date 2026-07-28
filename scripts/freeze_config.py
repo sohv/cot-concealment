@@ -1,5 +1,5 @@
 # dumps the frozen run config, scoring thresholds and gates to config.json before the first generation.
-# uv run -m scripts.freeze_config --output_dir results/val_2026_08_11_a --seed 42 --model_id Qwen/Qwen3-14B
+# uv run -m scripts.freeze_config --output_dir results/val_2026_08_11_a --seed 42 --model_id Qwen/Qwen3-8B
 
 import logging
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 @dataclass
 class Config:
     output_dir: str = "results"
-    model_id: str = "Qwen/Qwen3-14B"
+    model_id: str = "Qwen/Qwen3-8B"
     revision: str = ""
     engine_version: str = ""
     run_id: str = ""
@@ -25,14 +25,13 @@ class Config:
 
 def main():
     config = simple_parsing.parse(Config)
-    run = RUN.model_copy(
-        update={
-            "model": config.model_id,
-            "revision": config.revision,
-            "engine_version": config.engine_version,
-            "seed": config.seed,
-        }
-    )
+    # only override the frozen pins when explicitly given, or an empty cli default silently unpins them.
+    update = {"model": config.model_id, "seed": config.seed}
+    if config.revision:
+        update["revision"] = config.revision
+    if config.engine_version:
+        update["engine_version"] = config.engine_version
+    run = RUN.model_copy(update=update)
 
     if not run.revision:
         LOGGER.warning("revision is empty; pin the model commit hash before generating")

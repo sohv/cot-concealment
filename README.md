@@ -6,7 +6,7 @@ invented justification has no reason to follow it. Establishes what fraction of 
 attributing the answer to the hint are actually tracking it, the rate at which a hint that demonstrably
 drives the answer goes unmentioned, and a correction factor for headline verbalization numbers.
 
-Model: `Qwen/Qwen3-14B` in thinking mode, bfloat16, vLLM, condition `C3_neutral_private`.
+Model: `Qwen/Qwen3-8B` in thinking mode, bfloat16, vLLM, condition `C3_neutral_private`.
 
 ## Setup
 
@@ -15,12 +15,11 @@ uv sync
 uv run pre-commit install
 ```
 
-The inference stack is installed separately on the GPU box, since vLLM and torch must match the local
-CUDA build:
-
-```bash
-uv pip install "vllm==<pin>" transformers
-```
+The inference stack is pinned in `pyproject.toml` and must match the local CUDA driver. On this box the
+driver is 550.144.03 (CUDA 12.4), so the stack is `vllm==0.8.5.post1`, `torch==2.6.0+cu124`,
+`transformers==4.51.3`, `huggingface-hub<1.0`, `datasets<4`. Newer vLLM ships a torch built for CUDA 13
+and will not initialize here. `datasets>=5` forces `huggingface-hub>=1.0`, which transformers 4.51
+rejects, hence the pin.
 
 ## Repo structure
 
@@ -47,7 +46,7 @@ Stages run in this order. The scoring rules and gates are frozen before the firs
 |---|---|---|
 | freeze config | `scripts/freeze_config.py` | — |
 | build item pool | `scripts/build_pool.py` | 300 items → 1,200 variants |
-| behavioural filter (V0, V1) | not yet written | ~4,800 generations |
+| behavioural filter (V0, V1) | `scripts/run_filter.py` | 4,800 generations |
 | sweep (V0–V3 × 2 arms) | not yet written | 6,400 generations |
 | judge | not yet written | 6,400 calls |
 | hand label | manual | 50 items |
@@ -81,7 +80,7 @@ revision or engine version is unpinned.
 ```bash
 uv run -m scripts.freeze_config \
   --output_dir results/raw/val_2026_08_11_a \
-  --model_id Qwen/Qwen3-14B \
+  --model_id Qwen/Qwen3-8B \
   --revision <commit hash> \
   --engine_version <vllm version> \
   --seed 42
@@ -116,6 +115,37 @@ uv run -m scripts.build_pool \
 Built at seed 42: 300 items across 36 subjects from 15,214 source rows, 178 duplicates and 72
 unnormalizable rows dropped (71 excluded subjects, 1 wrong option count). Largest sources:
 `mmlu_professional_law` (39), `arc_challenge` (28), `mmlu_miscellaneous` (25).
+
+## Stage: behavioural filter
+
+Samples V0 and V1 eight times per item on the C3 arm and keeps items answered correctly without a hint in
+at least 6 of 8 and switched to the hinted option in at least 6 of 8. Runs before the sweep, and is also
+where the truncation and parse-failure rates are first measured — cheaper to discover a bad token budget
+here than after 6,400 sweep generations. Refuses to run if `generations.jsonl` already exists.
+
+**Input:** `data/processed/variants_seed<seed>.jsonl` — uses the `V0` and `V1` rows only.
+**Output:**
+- `<output_dir>/generations.jsonl` — one row per generation: every variant field plus `sample_idx`,
+  `think_text`, `content_text`, `parsed_answer`, `parse_ok`, `truncated`, `n_think_tokens`,
+  `n_total_tokens`, `finish_reason`, `stage`, `arm`, `run_id`, `prompt_fingerprint`
+- `<output_dir>/filter_results.jsonl` — per item: `n_v0_correct`, `n_v1_switched`, eligibility,
+  truncation and parse-failure counts, `passes_v0`, `passes_v1`, `survives`
+- `<output_dir>/survivors.json` — the surviving `item_ids`, input to the sweep
+- `<output_dir>/filter_report.json` — yield, per-source survival, truncation and parse-failure rates,
+  the two failure modes counted apart, and gate pass/fail
+
+**Run:**
+```bash
+uv run -m scripts.run_filter \
+  --variants_path data/processed/variants_seed42.jsonl \
+  --output_dir results/raw/filter_v1 \
+  --model_id Qwen/Qwen3-8B \
+  --seed 42
+```
+
+Failure modes are reported apart because they pull in opposite directions: items that are easy pass V0
+and then resist the hint, items that are hard flip readily and fail V0. A yield that collapses tells you
+which end of that band the pool sits on.
 
 ## The four cells
 

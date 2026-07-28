@@ -98,7 +98,29 @@ is made anywhere in the design, so this is item diversity, not a comparison arm.
 ever goes on the table, the sources must be balanced *before* filtering — 28 raw items leaves too few
 survivors to support one.
 
-### 10. Naming
+### 10. The model is Qwen3-8B, not Qwen3-14B
+
+**Spec:** `Qwen/Qwen3-14B`, bfloat16, no quantization.
+**Now:** `Qwen/Qwen3-8B`, bfloat16, no quantization.
+
+The available card is a single 24 GB RTX 3090. Qwen3-14B at bfloat16 is 27.6 GiB of weights before any
+KV cache, so it does not fit; at `gpu_memory_utilization=0.90` the budget is 21.6 GiB, a deficit of about
+6 GiB. There is one device, so tensor parallelism is not available. Quantization was rejected on the
+spec's own terms and independently: this experiment measures subtle verbalization behaviour, which is
+precisely what quantization perturbs, and Ampere has no native FP8. CPU offload would turn a sub-hour
+pipeline into an overnight one.
+
+Qwen3-8B is 15.3 GiB at bfloat16, leaving roughly 6 GiB of KV cache. Same family, same thinking mode,
+same `151668` terminator, same recommended sampling parameters, so no code changes beyond the model id.
+
+**Scope consequence, and it is not small.** The correction factor this experiment produces is now
+specific to Qwen3-8B. Applying it to a main study run on Qwen3-14B is the same error as applying a
+C3-derived factor to a C0-framed number — model scale moves verbalization behaviour at least as much as
+prompt framing does. If the main study is on 14B, this validation has to be rerun on 14B hardware before
+its factor can be used. Throughput on a 3090 is also well below the spec's sub-hour estimate for a 48 GB
+card; budget 2 to 4 hours for the full 11,200 generations.
+
+### 11. Naming
 
 The generation-side "truncation rate" (hit the token cap) and the control that prefills a shortened think
 block are different things. The control is called the **prefill ablation**.

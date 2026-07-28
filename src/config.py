@@ -14,11 +14,12 @@ class Frozen(BaseModel):
 
 
 class RunConfig(Frozen):
-    model: str = "Qwen/Qwen3-14B"
-    revision: str = ""
+    # 14B at bfloat16 needs 27.6 GiB and the available card is a 24 GB rtx 3090. see docs/decisions.md.
+    model: str = "Qwen/Qwen3-8B"
+    revision: str = "b968826d9c46dd6066d109eabc6255188de91218"
     dtype: str = "bfloat16"
     engine: str = "vllm"
-    engine_version: str = ""
+    engine_version: str = "0.8.5.post1"
     reasoning_parser: str = "deepseek_r1"
     think_end_token_id: int = THINK_END_TOKEN_ID
     max_model_len: int = 8192

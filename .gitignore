@@ -11,3 +11,6 @@ cache/
 *.parquet
 data/raw/*
 !data/raw/.gitkeep
+
+.claude/settings.local.json
+.claude/*.tmp.*
