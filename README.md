@@ -46,6 +46,7 @@ Stages run in this order. The scoring rules and gates are frozen before the firs
 | Stage | Script | Volume |
 |---|---|---|
 | freeze config | `scripts/freeze_config.py` | — |
+| build item pool | `scripts/build_pool.py` | 300 items → 1,200 variants |
 | behavioural filter (V0, V1) | not yet written | ~4,800 generations |
 | sweep (V0–V3 × 2 arms) | not yet written | 6,400 generations |
 | judge | not yet written | 6,400 calls |
@@ -85,6 +86,35 @@ uv run -m scripts.freeze_config \
   --engine_version <vllm version> \
   --seed 42
 ```
+
+## Stage: build item pool
+
+Loads `cais/mmlu` (test split, all subjects) and `allenai/ai2_arc` (`ARC-Challenge`) from HuggingFace,
+drops subjects whose answers can be reached by calculation, normalizes both to a four-option schema,
+deduplicates on question text, shuffles under the seed and caps at `n_items`. Then expands each item into
+its four variants with a distractor map derived from `md5(seed:item_id)`.
+
+Requires `HF_TOKEN` in `.env` for rate limits; the datasets themselves are public. Refuses to run if the
+output files already exist, since the writes append.
+
+**Input:** none. Both datasets are pulled from the Hub.
+**Output:**
+- `<output_dir>/pool_seed<seed>.jsonl` — fields: `item_id`, `source`, `question`, `options`, `correct`
+- `<output_dir>/variants_seed<seed>.jsonl` — the above plus `distractor_map`, `variant`, `cued_option`
+  (null for V0), four rows per item
+- `<output_dir>/pool_seed<seed>_meta.json` — `git_hash`, counts, `items_by_source`
+
+**Run:**
+```bash
+uv run -m scripts.build_pool \
+  --output_dir data/processed \
+  --n_items 300 \
+  --seed 42
+```
+
+Built at seed 42: 300 items across 35 subjects from 15,161 source rows, 178 duplicates and 98
+unnormalizable rows dropped. Largest sources: `mmlu_professional_law` (35), `mmlu_miscellaneous` (31),
+`arc_challenge` (27).
 
 ## The four cells
 

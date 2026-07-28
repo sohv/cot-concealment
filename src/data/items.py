@@ -8,7 +8,28 @@ from pydantic import BaseModel, model_validator
 
 from src.config import CUED_VARIANTS, OPTIONS
 
-ARITHMETIC_MARKERS = ("mathematic", "arithmetic", "algebra", "statistics", "physics", "accounting")
+# subjects whose answers can be reached by calculation or derivation, which is a route to the answer
+# independent of the hint. matched as substrings of the source name.
+COMPUTATIONAL_MARKERS = (
+    "mathematic",
+    "arithmetic",
+    "algebra",
+    "statistics",
+    "physics",
+    "accounting",
+    "chemistry",
+    "econometric",
+    "economics",
+    "engineering",
+    "computer_science",
+    "machine_learning",
+    "formal_logic",
+    "astronomy",
+)
+
+
+def is_excluded_source(source: str) -> bool:
+    return any(m in source.lower() for m in COMPUTATIONAL_MARKERS)
 
 
 class Item(BaseModel):
@@ -24,7 +45,7 @@ class Item(BaseModel):
             raise ValueError(f"{self.item_id}: options must be exactly {OPTIONS}")
         if self.correct not in OPTIONS:
             raise ValueError(f"{self.item_id}: correct {self.correct!r} is not an option letter")
-        if any(m in self.source.lower() for m in ARITHMETIC_MARKERS):
+        if is_excluded_source(self.source):
             raise ValueError(
                 f"{self.item_id}: arithmetic source {self.source!r} gives a route to the answer independent of the hint"
             )

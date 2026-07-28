@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Cue swap validation experiment: separating hint mention from hint influence"
 requires-python = ">=3.10"
 dependencies = [
+    "datasets>=5.0.1",
     "numpy",
     "pandas",
     "pyarrow",
     "pydantic>=2.7",
+    "python-dotenv>=1.2.2",
     "scipy",
     "simple-parsing",
     "tqdm",
