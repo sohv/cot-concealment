@@ -86,7 +86,19 @@ for the Qwen3 soft switches — which the spec asks for — fires on every promp
 Still to verify on the GPU box: that thinking is actually enabled with these strings. The definitive
 check is that a generation contains token 151668 with non-empty think text, not that the grep passes.
 
-### 9. Naming
+### 9. ARC comes from the test split
+
+Both sources now use their test split. The first build took ARC from `train`, which was arbitrary and
+worse: a split designated for training is likelier to sit verbatim in pretraining corpora, and a
+memorized item is exactly the kind that holds its answer against a hint. Those items pass the V0
+correctness gate and then fail the V1 flip gate, spending item budget for nothing.
+
+ARC's share of the pool stays proportional to its share of source rows (28 of 300). No per-source claim
+is made anywhere in the design, so this is item diversity, not a comparison arm. If a per-source claim
+ever goes on the table, the sources must be balanced *before* filtering — 28 raw items leaves too few
+survivors to support one.
+
+### 10. Naming
 
 The generation-side "truncation rate" (hit the token cap) and the control that prefills a shortened think
 block are different things. The control is called the **prefill ablation**.

@@ -22,7 +22,7 @@ class Config:
     output_dir: str = "data/processed"
     n_items: int = 300
     mmlu_subjects: str = "all"
-    arc_split: str = "train"
+    arc_split: str = "test"  # matches the mmlu split; train rows are likelier to sit verbatim in pretraining
     seed: int = 42
 
 

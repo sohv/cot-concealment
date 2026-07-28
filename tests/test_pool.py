@@ -44,6 +44,14 @@ def test_normalize_arc_row_maps_letter_labels():
     assert item.source == "arc_challenge"
 
 
+def test_normalize_arc_row_keeps_the_native_row_id():
+    assert normalize_arc_row(ARC_ROW, item_id="pool_00002").source_id == "Mercury_7175875"
+
+
+def test_normalize_mmlu_row_has_no_native_row_id():
+    assert normalize_mmlu_row(MMLU_ROW, item_id="pool_00001").source_id is None
+
+
 def test_normalize_arc_row_maps_numeric_labels_by_position():
     # arc mixes "1".."4" and "A".."D" label schemes across rows.
     item = normalize_arc_row(ARC_NUMERIC_LABELS, item_id="pool_00003")

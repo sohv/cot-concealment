@@ -48,6 +48,7 @@ def normalize_arc_row(row: dict, item_id: str) -> Item | None:
     return Item(
         item_id=item_id,
         source="arc_challenge",
+        source_id=row.get("id"),
         question=row["question"].strip(),
         options=dict(zip(OPTIONS, [t.strip() for t in texts])),
         correct=OPTIONS[labels.index(row["answerKey"])],
@@ -122,7 +123,7 @@ def assemble_pool(rows: list[tuple[dict, str]], n_items: int, seed: int) -> Pool
     return PoolBuild(items=items, stats=stats)
 
 
-def load_source_rows(mmlu_subjects: str = "all", arc_split: str = "train") -> list[tuple[dict, str]]:
+def load_source_rows(mmlu_subjects: str = "all", arc_split: str = "test") -> list[tuple[dict, str]]:
     from datasets import load_dataset
 
     mmlu = load_dataset(MMLU_DATASET, mmlu_subjects, split="test")

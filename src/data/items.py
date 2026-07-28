@@ -35,6 +35,7 @@ def is_excluded_source(source: str) -> bool:
 class Item(BaseModel):
     item_id: str
     source: str
+    source_id: str | None = None  # native row id where the source dataset has one; arc does, mmlu does not
     question: str
     options: dict[str, str]
     correct: str
@@ -55,6 +56,7 @@ class Item(BaseModel):
 class Variant(BaseModel):
     item_id: str
     source: str
+    source_id: str | None = None
     question: str
     options: dict[str, str]
     correct: str
