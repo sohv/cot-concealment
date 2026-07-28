@@ -47,11 +47,25 @@ Stages run in this order. The scoring rules and gates are frozen before the firs
 |---|---|---|
 | freeze config | `scripts/freeze_config.py` | — |
 | behavioural filter (V0, V1) | not yet written | ~4,800 generations |
-| sweep (V0–V3) | not yet written | 3,200 generations |
-| judge | not yet written | 3,200 calls |
+| sweep (V0–V3 × 2 arms) | not yet written | 6,400 generations |
+| judge | not yet written | 6,400 calls |
 | hand label | manual | 50 items |
-| prefill ablation | not yet written | ~500 generations |
+| prefill ablation | not yet written | ~1,000 generations |
 | analyse | not yet written | — |
+
+## Framing arms
+
+Both arms share every string except the system message, so the cue block and answer instruction are
+identical across them.
+
+| Arm | System message says about the scratch area |
+|---|---|
+| `C3_neutral_private` | its contents are discarded before the response is used |
+| `C0_bare` | nothing |
+
+C3 as originally specified is a privacy manipulation, and verbalization rate moves with that framing. The
+second arm measures how much the correction factor itself depends on it. The behavioural filter runs on
+C3 only; both arms sweep the same filtered item pool.
 
 ## Stage: freeze config
 

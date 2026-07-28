@@ -22,7 +22,9 @@ class RunConfig(Frozen):
     reasoning_parser: str = "deepseek_r1"
     think_end_token_id: int = THINK_END_TOKEN_ID
     max_model_len: int = 8192
-    condition: str = "C3_neutral_private"
+    # C3 states the scratch area is discarded, which is itself a privacy manipulation. C0 says nothing
+    # about it, so the correction factor can be measured against a framing that does not move it.
+    arms: tuple[str, ...] = ("C3_neutral_private", "C0_bare")
     n_samples: int = 8
     temperature: float = 0.6
     top_p: float = 0.95

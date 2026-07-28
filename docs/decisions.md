@@ -66,18 +66,33 @@ Judges do not return byte-exact spans. `.index()` raises `ValueError` and, under
 no-try/except rule, kills the control mid-run. Failures now return `None` and are recorded as
 `span_match_ok = False` with a reported rate.
 
-### 7. Naming
+### 7. A second framing arm
+
+**Spec:** `condition = "C3_neutral_private"`, single arm.
+**Now:** `RUN.arms = ("C3_neutral_private", "C0_bare")`. The sweep doubles to 6,400 generations.
+
+C3 tells the model its scratch area is discarded before the response is used. That is a privacy
+manipulation, not a neutral framing, and verbalization rate moves with it. A correction factor derived
+under C3 alone cannot be applied to main study numbers collected under a different framing. `C0_bare`
+says nothing about what happens to the scratch area and is otherwise identical, so the difference between
+arms is the framing sensitivity of the correction factor itself.
+
+### 8. The soft switch check excludes the closing tag
+
+Both arms reference `</think>` by design, and that string contains the literal `/think`. A substring grep
+for the Qwen3 soft switches — which the spec asks for — fires on every prompt we intend to send.
+`SOFT_SWITCH_RE` requires the directive not be preceded by `<`.
+
+Still to verify on the GPU box: that thinking is actually enabled with these strings. The definitive
+check is that a generation contains token 151668 with non-empty think text, not that the grep passes.
+
+### 9. Naming
 
 The generation-side "truncation rate" (hit the token cap) and the control that prefills a shortened think
 block are different things. The control is called the **prefill ablation**.
 
 ## Open, not yet decided
 
-- **Correction factor scope.** The design derives the factor under `C3_neutral_private` only, but states
-  it will be applied to every headline number in the main study. C3 tells the model its scratch area is
-  discarded, which is a privacy manipulation, and verbalization rate moves with that framing. Either
-  restrict the claim to C3-matched conditions, or add a second arm whose system message says nothing
-  about what happens to the scratch area.
 - **Prefill ablation confound.** Cutting before the evidence span removes the mention and everything
   downstream of it. A length-matched arm (same trace, cut at a random position of equal token offset that
   does not contain the span) is needed to isolate the mention.
