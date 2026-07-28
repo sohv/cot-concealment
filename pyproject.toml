@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.7",
     "python-dotenv>=1.2.2",
     "scipy",
+    "setuptools>=83.0.0",
     "simple-parsing",
     "tqdm",
     "transformers==4.51.3",

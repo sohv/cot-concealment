@@ -5,7 +5,7 @@ import logging
 
 from pydantic import BaseModel
 
-from src.config import RunConfig
+from src.config import THINK_START_TOKEN_ID, RunConfig
 from src.generation.parsing import parse_answer, split_trace
 
 LOGGER = logging.getLogger(__name__)
@@ -59,7 +59,12 @@ def to_generations(output, tok, run: RunConfig) -> list[Generation]:
         token_ids = list(completion.token_ids)
         think_text, content_text, truncated = split_trace(token_ids, tok, run.think_end_token_id)
         parsed_answer, parse_ok = parse_answer(content_text)
-        n_think = 0 if think_text is None else token_ids.index(run.think_end_token_id)
+        # excludes the model emitted <think> token so the count is reasoning tokens, not tags.
+        n_think = (
+            0
+            if think_text is None
+            else token_ids.index(run.think_end_token_id) - (token_ids[0] == THINK_START_TOKEN_ID)
+        )
         generations.append(
             Generation(
                 sample_idx=sample_idx,

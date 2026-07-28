@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 VARIANTS = ("V0", "V1", "V2", "V3")
 CUED_VARIANTS = ("V1", "V2", "V3")
 OPTIONS = ("A", "B", "C", "D")
+THINK_START_TOKEN_ID = 151667
 THINK_END_TOKEN_ID = 151668
 
 

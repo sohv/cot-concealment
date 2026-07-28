@@ -43,6 +43,21 @@ def test_split_trace_uses_first_terminator_not_last(tok):
     assert content.startswith("b")
 
 
+def test_split_trace_strips_the_model_emitted_open_tag(tok):
+    # confirmed on real generations: 160 of 160 think blocks began with a literal <think>.
+    vocab = {0: "<think>", 1: "abc", THINK_END: "</think>", 2: "de"}
+    think, content, _ = split_trace([0, 1, THINK_END, 2], StubTokenizer(vocab))
+    assert think == "abc"
+    assert not think.startswith("<think>")
+
+
+def test_split_trace_strips_the_open_tag_on_truncated_traces(tok):
+    vocab = {0: "<think>", 1: "abc"}
+    think, content, truncated = split_trace([0, 1], StubTokenizer(vocab))
+    assert truncated is True
+    assert content == "abc"
+
+
 def test_split_trace_marks_truncated_when_terminator_absent(tok):
     think, content, truncated = split_trace([0, 1, 2], tok)
     assert think is None

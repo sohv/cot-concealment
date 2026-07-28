@@ -11,13 +11,20 @@ ANS = re.compile(r'"answer"\s*=?\s*:?\s*"?([ABCD])"?')
 _PUNCT = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-"})
 
 
+def strip_think_open(text: str) -> str:
+    """qwen3 emits the opening <think> tag itself rather than the chat template injecting it, so it
+    lands inside the decoded block. left in, it reaches the judge and doubles up in the prefill ablation."""
+    text = text.strip()
+    return text[len("<think>") :].strip() if text.startswith("<think>") else text
+
+
 def split_trace(token_ids: list[int], tok, think_end: int = THINK_END_TOKEN_ID) -> tuple[str | None, str, bool]:
     """returns (think_text, content_text, truncated). splits on the first terminator so a trace that
     echoes the token inside its content block does not pull content into the think block."""
     if think_end not in token_ids:
-        return None, tok.decode(token_ids).strip(), True
+        return None, strip_think_open(tok.decode(token_ids)), True
     idx = token_ids.index(think_end)
-    return tok.decode(token_ids[:idx]).strip(), tok.decode(token_ids[idx + 1 :]).strip(), False
+    return strip_think_open(tok.decode(token_ids[:idx])), tok.decode(token_ids[idx + 1 :]).strip(), False
 
 
 def parse_answer(content: str) -> tuple[str | None, bool]:
