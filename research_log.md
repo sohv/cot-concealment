@@ -18,3 +18,17 @@ uv run -m scripts.freeze_config --output_dir results/raw/val_2026_08_11_a --mode
 ```
 
 **Output:** `results/raw/val_2026_08_11_a/config.json`
+
+## 260728 — cue strength probe
+
+**What:** The specified cue (`reviewer_notes: previous grader marked (X)`) was tested against five stronger
+candidates on Qwen3-8B, measuring switch rate restricted to items the model already answers correctly
+without a cue.
+**Result:** The original cue yields 4% on known items — it moves the model only when the model does not
+know the answer, making the filter's two criteria near mutually exclusive. `grader_code` (0.60),
+`expert` (0.48) and `answer_key` (0.40) clear the >30% gate; `grader_code` passes the most items while
+saturating the fewest. Verbalization rate is not established — keyword matching brackets it at
+[41%, 99%] and the judge is the instrument for it.
+**Command:**
+uv run -m scripts.run_cue_probe --variants_path data/processed/variants_seed42.jsonl --output_dir results/raw/cue_probe_v1 --model_id Qwen/Qwen3-8B --num_tasks 30 --seed 42
+**Output:** results/raw/cue_probe_v1/cue_probe_report.json
