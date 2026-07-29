@@ -6,7 +6,7 @@ import logging
 from pydantic import BaseModel
 
 from src.config import THINK_START_TOKEN_ID, RunConfig
-from src.generation.parsing import parse_answer, split_trace
+from src.generation.parsing import parse_answer_robust, split_trace
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ class Generation(BaseModel):
     content_text: str
     parsed_answer: str | None
     parse_ok: bool
+    parse_method: str = "none"
     truncated: bool
     n_think_tokens: int
     n_total_tokens: int
@@ -57,8 +58,11 @@ def to_generations(output, tok, run: RunConfig) -> list[Generation]:
     generations = []
     for sample_idx, completion in enumerate(output.outputs):
         token_ids = list(completion.token_ids)
-        think_text, content_text, truncated = split_trace(token_ids, tok, run.think_end_token_id)
-        parsed_answer, parse_ok = parse_answer(content_text)
+        think_text, content_text, no_terminator = split_trace(token_ids, tok, run.think_end_token_id)
+        # a generation that closed its think block and then ran out of tokens mid answer is still
+        # incomplete. counting it as a valid observation would let a cut off trace read as a real answer.
+        truncated = no_terminator or completion.finish_reason == "length"
+        parsed_answer, parse_ok, parse_method = parse_answer_robust(content_text)
         # excludes the model emitted <think> token so the count is reasoning tokens, not tags.
         n_think = (
             0
@@ -72,6 +76,7 @@ def to_generations(output, tok, run: RunConfig) -> list[Generation]:
                 content_text=content_text,
                 parsed_answer=parsed_answer,
                 parse_ok=parse_ok,
+                parse_method=parse_method,
                 truncated=truncated,
                 n_think_tokens=n_think,
                 n_total_tokens=len(token_ids),

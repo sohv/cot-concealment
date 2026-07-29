@@ -32,6 +32,24 @@ def parse_answer(content: str) -> tuple[str | None, bool]:
     return (m.group(1), True) if m else (None, False)
 
 
+# the model often ends in prose ("**Answer:** A", "The answer is A.") instead of the requested json
+# field. those are real answers and dropping them biases the modal counts, so they are recovered from
+# the tail only, where a final answer statement lives, and the method is recorded per generation.
+# deliberately not re.I: the filler between "answer" and the letter may be any lowercase words, but the
+# answer letter itself is always upper case, so [^A-D] stops the match running past a real candidate.
+FINAL_ANS = re.compile(r"(?:[Aa]nswer|[Cc]hoice)\b[^A-D\n]{0,20}\(?([ABCD])\)?\b")
+
+
+def parse_answer_robust(content: str, tail_chars: int = 300) -> tuple[str | None, bool, str]:
+    answer, ok = parse_answer(content)
+    if ok:
+        return answer, True, "json"
+    hits = FINAL_ANS.findall(content[-tail_chars:])
+    if hits:
+        return hits[-1].upper(), True, "prose"
+    return None, False, "none"
+
+
 def _normalize_with_map(text: str) -> tuple[str, list[int]]:
     """lowercases, straightens punctuation and collapses whitespace, keeping a map back to original offsets."""
     chars: list[str] = []

@@ -1,6 +1,6 @@
 import pytest
 
-from src.generation.parsing import find_span, normalize_span, parse_answer, split_trace
+from src.generation.parsing import find_span, normalize_span, parse_answer, parse_answer_robust, split_trace
 
 THINK_END = 151668
 
@@ -79,6 +79,33 @@ def test_parse_answer(content, expected):
     answer, ok = parse_answer(content)
     assert answer == expected
     assert ok is (expected is not None)
+
+
+@pytest.mark.parametrize(
+    "content,expected,method",
+    [
+        ('{"answer": "C"}', "C", "json"),
+        ("Therefore the statute applies.\n\n**Answer:** A", "A", "prose"),
+        ("...lack of intent. The answer is A.", "A", "prose"),
+        ("He cannot succeed. Answer: (D)", "D", "prose"),
+        ("no letter here at all", None, "none"),
+    ],
+)
+def test_parse_answer_robust_recovers_prose_endings(content, expected, method):
+    # the model often ignores the json field and states the answer in prose; dropping those biases
+    # the modal counts, which is what the tracking gate reads.
+    answer, ok, got = parse_answer_robust(content)
+    assert (answer, ok, got) == (expected, expected is not None, method)
+
+
+def test_parse_answer_robust_only_looks_at_the_tail():
+    # an option letter discussed early in the content is not a final answer statement.
+    body = "The answer might be A but that is wrong. " + "x" * 500
+    assert parse_answer_robust(body, tail_chars=100) == (None, False, "none")
+
+
+def test_parse_answer_robust_takes_the_last_statement():
+    assert parse_answer_robust("answer is B ... on reflection the answer is D")[0] == "D"
 
 
 def test_normalize_span_collapses_whitespace_and_quotes():
