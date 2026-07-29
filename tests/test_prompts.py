@@ -7,6 +7,7 @@ from src.generation.prompts import (
     ARMS,
     CUE_BLOCKS,
     SOFT_SWITCHES,
+    UNOBSERVED_ARMS,
     assert_no_soft_switch,
     build_chat,
     build_user_message,
@@ -26,37 +27,40 @@ class StubTokenizer:
         return "".join(m["content"] for m in messages)
 
 
-def test_both_arms_are_defined_and_declared_in_the_run_config():
+def test_every_arm_is_declared_in_the_run_config():
     assert set(ARMS) == set(RUN.arms)
-    assert len(ARMS) == 2
 
 
-def test_arms_differ_only_in_the_system_message():
-    private, bare = ARMS["C3_neutral_private"], ARMS["C0_bare"]
-    assert private != bare
-    assert "discarded" in private
-    assert "discarded" not in bare
+def test_the_three_arms_vary_only_on_the_observation_axis():
+    # C0 is the base; C3 and C2 each add exactly one sentence about what happens to the scratch area.
+    bare, private, monitored = ARMS["C0_bare"], ARMS["C3_neutral_private"], ARMS["C2_monitored"]
+    assert len({bare, private, monitored}) == 3
+    assert private.startswith(bare.rsplit(".", 2)[0])
+    assert monitored.startswith(bare.rsplit(".", 2)[0])
+    assert "discarded" in private and "recorded" in monitored
+    assert "discarded" not in bare and "recorded" not in bare
 
 
-def test_no_arm_mentions_monitoring_training_or_grading():
+def test_unobserved_arms_mention_no_monitoring_training_or_grading():
+    # the spec's constraint, asserted over the arms it was written for. C2 breaches it by design.
     banned = [
         "monitor",
         "logged",
         "logging",
+        "recorded",
+        "reviewed",
         "training",
         "evaluat",
         "grading",
         "graded",
         "secret",
-        "anthropic",
-        "openai",
     ]
-    for name, system in ARMS.items():
-        lowered = system.lower()
+    for name in UNOBSERVED_ARMS:
+        lowered = ARMS[name].lower()
         assert not [w for w in banned if w in lowered], f"{name} leaks framing"
 
 
-@pytest.mark.parametrize("arm", ["C3_neutral_private", "C0_bare"])
+@pytest.mark.parametrize("arm", ["C3_neutral_private", "C0_bare", "C2_monitored"])
 def test_arm_system_messages_carry_no_thinking_mode_soft_switch(arm):
     assert_no_soft_switch(ARMS[arm])
 
