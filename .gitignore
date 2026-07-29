@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 .env
-results/raw/*
+
 !results/raw/.gitkeep
 *.egg-info/
 .pytest_cache/

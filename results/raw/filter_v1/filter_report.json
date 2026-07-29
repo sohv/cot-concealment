@@ -1,0 +1,224 @@
+{
+  "run_id": "filter_v1",
+  "git_hash": "90e296af",
+  "arm": "C3_neutral_private",
+  "cue_name": "grader_code",
+  "prompt_fingerprint": "5f8a8545b8d3",
+  "run": {
+    "model": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "dtype": "bfloat16",
+    "engine": "vllm",
+    "engine_version": "0.8.5.post1",
+    "reasoning_parser": "deepseek_r1",
+    "think_end_token_id": 151668,
+    "max_model_len": 8192,
+    "arms": [
+      "C3_neutral_private",
+      "C0_bare"
+    ],
+    "cue_name": "grader_code",
+    "n_samples": 8,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "max_tokens": 4096,
+    "seed": 42
+  },
+  "report": {
+    "n_items": 300,
+    "n_survivors": 120,
+    "filter_yield": 0.4,
+    "n_failed_v0_only": 48,
+    "n_failed_v1_only": 122,
+    "n_failed_both": 10,
+    "n_generations": 4800,
+    "truncation_rate": 0.019,
+    "parse_fail_rate": 0.0036,
+    "by_source": {
+      "mmlu_professional_law": {
+        "n_items": 39,
+        "n_survivors": 10,
+        "survival_rate": 0.2564
+      },
+      "arc_challenge": {
+        "n_items": 28,
+        "n_survivors": 15,
+        "survival_rate": 0.5357
+      },
+      "mmlu_miscellaneous": {
+        "n_items": 25,
+        "n_survivors": 1,
+        "survival_rate": 0.04
+      },
+      "mmlu_high_school_psychology": {
+        "n_items": 23,
+        "n_survivors": 7,
+        "survival_rate": 0.3043
+      },
+      "mmlu_professional_psychology": {
+        "n_items": 20,
+        "n_survivors": 9,
+        "survival_rate": 0.45
+      },
+      "mmlu_moral_scenarios": {
+        "n_items": 18,
+        "n_survivors": 9,
+        "survival_rate": 0.5
+      },
+      "mmlu_clinical_knowledge": {
+        "n_items": 11,
+        "n_survivors": 5,
+        "survival_rate": 0.4545
+      },
+      "mmlu_moral_disputes": {
+        "n_items": 10,
+        "n_survivors": 4,
+        "survival_rate": 0.4
+      },
+      "mmlu_nutrition": {
+        "n_items": 10,
+        "n_survivors": 6,
+        "survival_rate": 0.6
+      },
+      "mmlu_high_school_us_history": {
+        "n_items": 9,
+        "n_survivors": 3,
+        "survival_rate": 0.3333
+      },
+      "mmlu_security_studies": {
+        "n_items": 9,
+        "n_survivors": 6,
+        "survival_rate": 0.6667
+      },
+      "mmlu_human_aging": {
+        "n_items": 8,
+        "n_survivors": 3,
+        "survival_rate": 0.375
+      },
+      "mmlu_philosophy": {
+        "n_items": 7,
+        "n_survivors": 5,
+        "survival_rate": 0.7143
+      },
+      "mmlu_world_religions": {
+        "n_items": 6,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_professional_medicine": {
+        "n_items": 6,
+        "n_survivors": 3,
+        "survival_rate": 0.5
+      },
+      "mmlu_high_school_biology": {
+        "n_items": 6,
+        "n_survivors": 4,
+        "survival_rate": 0.6667
+      },
+      "mmlu_college_medicine": {
+        "n_items": 5,
+        "n_survivors": 3,
+        "survival_rate": 0.6
+      },
+      "mmlu_high_school_government_and_politics": {
+        "n_items": 5,
+        "n_survivors": 2,
+        "survival_rate": 0.4
+      },
+      "mmlu_human_sexuality": {
+        "n_items": 5,
+        "n_survivors": 2,
+        "survival_rate": 0.4
+      },
+      "mmlu_prehistory": {
+        "n_items": 5,
+        "n_survivors": 4,
+        "survival_rate": 0.8
+      },
+      "mmlu_high_school_geography": {
+        "n_items": 5,
+        "n_survivors": 2,
+        "survival_rate": 0.4
+      },
+      "mmlu_computer_security": {
+        "n_items": 4,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_marketing": {
+        "n_items": 4,
+        "n_survivors": 2,
+        "survival_rate": 0.5
+      },
+      "mmlu_management": {
+        "n_items": 3,
+        "n_survivors": 2,
+        "survival_rate": 0.6667
+      },
+      "mmlu_high_school_world_history": {
+        "n_items": 3,
+        "n_survivors": 1,
+        "survival_rate": 0.3333
+      },
+      "mmlu_high_school_european_history": {
+        "n_items": 3,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_sociology": {
+        "n_items": 3,
+        "n_survivors": 2,
+        "survival_rate": 0.6667
+      },
+      "mmlu_medical_genetics": {
+        "n_items": 3,
+        "n_survivors": 1,
+        "survival_rate": 0.3333
+      },
+      "mmlu_virology": {
+        "n_items": 3,
+        "n_survivors": 1,
+        "survival_rate": 0.3333
+      },
+      "mmlu_international_law": {
+        "n_items": 3,
+        "n_survivors": 1,
+        "survival_rate": 0.3333
+      },
+      "mmlu_logical_fallacies": {
+        "n_items": 3,
+        "n_survivors": 1,
+        "survival_rate": 0.3333
+      },
+      "mmlu_public_relations": {
+        "n_items": 2,
+        "n_survivors": 1,
+        "survival_rate": 0.5
+      },
+      "mmlu_college_biology": {
+        "n_items": 2,
+        "n_survivors": 2,
+        "survival_rate": 1.0
+      },
+      "mmlu_us_foreign_policy": {
+        "n_items": 2,
+        "n_survivors": 2,
+        "survival_rate": 1.0
+      },
+      "mmlu_jurisprudence": {
+        "n_items": 1,
+        "n_survivors": 1,
+        "survival_rate": 1.0
+      },
+      "mmlu_global_facts": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      }
+    },
+    "gate_filter_yield_passes": true,
+    "gate_truncation_rate_passes": true
+  }
+}

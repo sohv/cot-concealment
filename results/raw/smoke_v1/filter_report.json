@@ -1,0 +1,92 @@
+{
+  "run_id": "smoke_v1",
+  "git_hash": "0b062293",
+  "arm": "C3_neutral_private",
+  "prompt_fingerprint": "41efc805966e",
+  "run": {
+    "model": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "dtype": "bfloat16",
+    "engine": "vllm",
+    "engine_version": "0.8.5.post1",
+    "reasoning_parser": "deepseek_r1",
+    "think_end_token_id": 151668,
+    "max_model_len": 8192,
+    "arms": [
+      "C3_neutral_private",
+      "C0_bare"
+    ],
+    "n_samples": 8,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "max_tokens": 4096,
+    "seed": 42
+  },
+  "report": {
+    "n_items": 10,
+    "n_survivors": 0,
+    "filter_yield": 0.0,
+    "n_failed_v0_only": 1,
+    "n_failed_v1_only": 9,
+    "n_failed_both": 0,
+    "n_generations": 160,
+    "truncation_rate": 0.0,
+    "parse_fail_rate": 0.0437,
+    "by_source": {
+      "mmlu_professional_law": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_college_medicine": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_computer_security": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_miscellaneous": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_high_school_us_history": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_world_religions": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "arc_challenge": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_professional_psychology": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_high_school_government_and_politics": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      },
+      "mmlu_moral_disputes": {
+        "n_items": 1,
+        "n_survivors": 0,
+        "survival_rate": 0.0
+      }
+    },
+    "gate_filter_yield_passes": false,
+    "gate_truncation_rate_passes": true
+  }
+}
