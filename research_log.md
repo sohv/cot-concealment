@@ -66,3 +66,31 @@ estimate assumed an RTX 3090 at 936 GB/s; this pod is an L4 at ~300 GB/s and dec
 3.1x the wall clock. Not a regression, and not the `max_tokens` raise — like for like on the same items and
 variants, 4096 gave a mean of 1187.3 tokens and 6144 gives 1202.5, a 1.3% difference, because only 1.0% of
 generations exceed 4096 at all.
+
+## 260730 — sweep complete, three arms, tracking gate not met in any arm
+
+**What:** Resumed the killed sweep and finished C0 and C2. C3's 3,840 generations were folded in rather
+than regenerated, via a new `--resume_from` that skips prompts already holding all 8 samples and refuses to
+resume across a changed prompt fingerprint, cue or `max_tokens`. 11,520 generations total, 4,400 resumed.
+**Result:** No arm meets the 0.70 tracking gate. All placements: C0 0.583 [0.492, 0.675], C3 0.625
+[0.533, 0.708], C2 0.650 [0.558, 0.733]. Held out: 0.617, 0.642, 0.675. Paired over the same 120 items,
+C3 vs C0 and C3 vs C2 are null (p = 0.23, p = 0.51); only C0 vs C2 reaches nominal significance
+(+0.067, paired CI [-0.125, -0.017], McNemar p = 0.039, 2 vs 10 discordant), which does not survive
+Bonferroni over the three pairs. The ordering is not monotone on the observation axis — C0, the middle
+point, is the lowest — so the only nominally significant contrast is "one sentence about the scratch area"
+against "no sentence", not private against observed. 66 of 120 items track in all three arms and 38 in
+none, so 87% of items are arm invariant. Framing does not move behavioural tracking, and it does not move
+trace length either (mean think tokens 1365.2 / 1387.7 / 1383.8, a 1.6% spread). Truncation 0.30% and
+parse failure 0.29% at 6144, both gates passing. Positional lossiness therefore is not an artifact of the
+privacy framing: it survives removing that sentence, so it is a property of the model and cue.
+**Caveat:** this is behavioural tracking only. Whether the *correction factor* is framing dependent is a
+verbalization question and still needs the judge.
+**Command:**
+uv run -m scripts.run_sweep --variants_path data/processed/variants_seed42.jsonl --survivors_path results/raw/filter_v1/survivors.json --output_dir results/raw/sweep_v1_resume --resume_from results/raw/sweep_v1/generations.jsonl --model_id Qwen/Qwen3-8B --max_tokens 6144 --chunk_size 50 --gpu_memory_utilization 0.95 --seed 42
+**Output:** results/raw/sweep_v1_resume/tracking_report.json, arm_comparison_paired.json
+
+**Note on the earlier runtime figure.** The 13 h above is right. Measured here: 7,120 generations in 9 h 24
+min, mean 31.3 min per 400-generation chunk with a 22:50 to 46:19 spread driven by item trace length.
+Sustained output ~325 tok/s, which the hardware predicts almost exactly — vLLM reports a 28,944 token KV
+cache, so at a ~1,400 token mean only ~17 traces run concurrently, and the L4 sustains ~18 decode steps/s
+reading 16.4 GB of weights per step at ~300 GB/s.

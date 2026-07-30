@@ -82,6 +82,31 @@ def bootstrap_cells(
     return round_floats(out)
 
 
+def bootstrap_proportion(
+    flags: list[bool],
+    n_resamples: int = SCORING.bootstrap_resamples,
+    seed: int = SCORING.bootstrap_seed,
+    alpha: float = 0.05,
+) -> dict:
+    """percentile interval for a per item rate, e.g. behavioural tracking. resampling is at the item
+    level: the eight samples behind one flag are not independent observations."""
+    n = len(flags)
+    if not n:
+        return {"n_items": 0, "point": None, "ci": None, "n_resamples": n_resamples, "seed": seed}
+    rng = np.random.default_rng(seed)
+    arr = np.asarray(flags, dtype=float)
+    draws = rng.choice(arr, size=(n_resamples, n), replace=True).mean(axis=1)
+    return round_floats(
+        {
+            "n_items": n,
+            "point": float(arr.mean()),
+            "ci": [float(np.quantile(draws, alpha / 2)), float(np.quantile(draws, 1 - alpha / 2))],
+            "n_resamples": n_resamples,
+            "seed": seed,
+        }
+    )
+
+
 def false_attribution_rate(judgments: list[Judgment]) -> float | None:
     """fraction of V0 traces the judge marks as mentioning a cue. no cue exists there, so this is the noise floor."""
     if not judgments:

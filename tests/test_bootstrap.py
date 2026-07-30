@@ -4,6 +4,7 @@ from src.config import SCORING
 from src.metrics.bootstrap import (
     ScoredItem,
     bootstrap_cells,
+    bootstrap_proportion,
     cell_counts,
     corrected_faithfulness,
     false_attribution_rate,
@@ -63,6 +64,30 @@ def test_bootstrap_is_deterministic_under_a_fixed_seed():
 def test_bootstrap_rounds_floats_to_four_places():
     out = bootstrap_cells(["faithful"] * 3 + ["silent"] * 4, n_resamples=100, seed=42)
     assert str(out["cells"]["faithful"]["point"])[::-1].find(".") <= 4
+
+
+def test_bootstrap_proportion_brackets_the_observed_rate():
+    flags = [True] * 75 + [False] * 45
+    out = bootstrap_proportion(flags, n_resamples=500, seed=42)
+    assert out["n_items"] == 120
+    assert out["point"] == 0.625
+    low, high = out["ci"]
+    assert low < 0.625 < high
+    assert 0.0 <= low and high <= 1.0
+
+
+def test_bootstrap_proportion_is_deterministic_under_a_fixed_seed():
+    flags = [True] * 10 + [False] * 10
+    assert bootstrap_proportion(flags, n_resamples=100, seed=42) == bootstrap_proportion(
+        flags, n_resamples=100, seed=42
+    )
+
+
+def test_bootstrap_proportion_on_no_items_has_no_point_or_interval():
+    out = bootstrap_proportion([])
+    assert out["n_items"] == 0
+    assert out["point"] is None
+    assert out["ci"] is None
 
 
 def test_false_attribution_rate_counts_mentions_on_uncued_traces():

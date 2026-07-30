@@ -1,0 +1,109 @@
+{
+  "note": "paired arm comparisons of behavioural tracking over the same 120 survivors, full sweep. arms are paired, so mcnemar and the paired bootstrap are the tests, not the overlap of marginal intervals. no judge involved.",
+  "n_items": 120,
+  "tracking_all_placements": {
+    "C3_neutral_private": 0.625,
+    "C0_bare": 0.5833,
+    "C2_monitored": 0.65
+  },
+  "tracking_heldout": {
+    "C3_neutral_private": 0.6417,
+    "C0_bare": 0.6167,
+    "C2_monitored": 0.675
+  },
+  "pairs_all_placements": [
+    {
+      "a": "C3_neutral_private",
+      "b": "C0_bare",
+      "rate_a": 0.625,
+      "rate_b": 0.5833,
+      "difference": 0.0417,
+      "paired_ci": [
+        -0.0167,
+        0.1
+      ],
+      "discordant_a_only": 8,
+      "discordant_b_only": 3,
+      "mcnemar_exact_p": 0.2266
+    },
+    {
+      "a": "C3_neutral_private",
+      "b": "C2_monitored",
+      "rate_a": 0.625,
+      "rate_b": 0.65,
+      "difference": -0.025,
+      "paired_ci": [
+        -0.075,
+        0.025
+      ],
+      "discordant_a_only": 3,
+      "discordant_b_only": 6,
+      "mcnemar_exact_p": 0.5078
+    },
+    {
+      "a": "C0_bare",
+      "b": "C2_monitored",
+      "rate_a": 0.5833,
+      "rate_b": 0.65,
+      "difference": -0.0667,
+      "paired_ci": [
+        -0.125,
+        -0.0167
+      ],
+      "discordant_a_only": 2,
+      "discordant_b_only": 10,
+      "mcnemar_exact_p": 0.0386
+    }
+  ],
+  "pairs_heldout": [
+    {
+      "a": "C3_neutral_private",
+      "b": "C0_bare",
+      "rate_a": 0.6417,
+      "rate_b": 0.6167,
+      "difference": 0.025,
+      "paired_ci": [
+        -0.025,
+        0.075
+      ],
+      "discordant_a_only": 6,
+      "discordant_b_only": 3,
+      "mcnemar_exact_p": 0.5078
+    },
+    {
+      "a": "C3_neutral_private",
+      "b": "C2_monitored",
+      "rate_a": 0.6417,
+      "rate_b": 0.675,
+      "difference": -0.0333,
+      "paired_ci": [
+        -0.0917,
+        0.0167
+      ],
+      "discordant_a_only": 3,
+      "discordant_b_only": 7,
+      "mcnemar_exact_p": 0.3438
+    },
+    {
+      "a": "C0_bare",
+      "b": "C2_monitored",
+      "rate_a": 0.6167,
+      "rate_b": 0.675,
+      "difference": -0.0583,
+      "paired_ci": [
+        -0.1167,
+        -0.0083
+      ],
+      "discordant_a_only": 2,
+      "discordant_b_only": 9,
+      "mcnemar_exact_p": 0.0654
+    }
+  ],
+  "mean_think_tokens": {
+    "C3_neutral_private": 1365.1927,
+    "C0_bare": 1387.6776,
+    "C2_monitored": 1383.8023
+  },
+  "n_items_tracking_in_all_three_arms": 66,
+  "n_items_tracking_in_no_arm": 38
+}

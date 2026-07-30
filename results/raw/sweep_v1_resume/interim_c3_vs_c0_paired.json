@@ -1,0 +1,21 @@
+{
+  "note": "interim paired comparison of behavioural tracking, C3 vs C0, same 120 items. arms are paired so the item level paired bootstrap and mcnemar are the tests, not the overlap of the two marginal intervals.",
+  "n_items": 120,
+  "c3_tracking": 0.625,
+  "c0_tracking": 0.5833,
+  "difference_c3_minus_c0": 0.0417,
+  "paired_ci": [
+    -0.0167,
+    0.1
+  ],
+  "concordant_both": 67,
+  "concordant_neither": 42,
+  "discordant_c3_only": 8,
+  "discordant_c0_only": 3,
+  "mcnemar_exact_p": 0.2266,
+  "mean_think_tokens": {
+    "C3_neutral_private": 1365.1927,
+    "C0_bare": 1387.6776,
+    "C2_monitored": 1471.1312
+  }
+}
