@@ -1,6 +1,6 @@
 {
   "run_id": "sweep_v1_resume",
-  "git_hash": "e52092aa",
+  "git_hash": "e622e61c",
   "is_interim": true,
   "arms": [
     "C3_neutral_private",
@@ -35,21 +35,21 @@
     "results/raw/sweep_v1/generations.jsonl",
     "results/raw/sweep_v1_resume/generations.jsonl"
   ],
-  "n_generations": 8000,
+  "n_generations": 11520,
   "n_generations_planned": 11520,
-  "n_generations_prior": 8000,
+  "n_generations_prior": 11520,
   "n_generations_new": 0,
   "generations_by_arm": {
     "C3_neutral_private": 3840,
     "C0_bare": 3840,
-    "C2_monitored": 320
+    "C2_monitored": 3840
   },
-  "truncation_rate": 0.0032,
-  "parse_fail_rate": 0.003,
+  "truncation_rate": 0.003,
+  "parse_fail_rate": 0.0029,
   "parse_method": {
-    "json": 7966,
-    "prose": 10,
-    "none": 24
+    "json": 11474,
+    "prose": 13,
+    "none": 33
   },
   "gate_truncation_passes": true,
   "gate_behavioral_tracking_min": 0.7,
@@ -170,54 +170,54 @@
     },
     "C2_monitored": {
       "n_items_requested": 120,
-      "n_items_complete": 10,
+      "n_items_complete": 120,
       "tracking_all_placements": {
-        "n_items": 10,
-        "point": 0.6,
+        "n_items": 120,
+        "point": 0.65,
         "ci": [
-          0.3,
-          0.9
+          0.5583,
+          0.7333
         ],
         "n_resamples": 1000,
         "seed": 42
       },
       "tracking_heldout": {
-        "n_items": 10,
-        "point": 0.6,
+        "n_items": 120,
+        "point": 0.675,
         "ci": [
-          0.3,
-          0.9
+          0.5915,
+          0.7583
         ],
         "n_resamples": 1000,
         "seed": 42
       },
       "per_placement": {
         "V1": {
-          "n_items": 10,
-          "point": 0.9,
+          "n_items": 120,
+          "point": 0.8917,
           "ci": [
-            0.7,
-            1.0
+            0.8333,
+            0.9417
           ],
           "n_resamples": 1000,
           "seed": 42
         },
         "V2": {
-          "n_items": 10,
-          "point": 0.7,
+          "n_items": 120,
+          "point": 0.7667,
           "ci": [
-            0.4,
-            1.0
+            0.6833,
+            0.8417
           ],
           "n_resamples": 1000,
           "seed": 42
         },
         "V3": {
-          "n_items": 10,
-          "point": 0.7,
+          "n_items": 120,
+          "point": 0.7417,
           "ci": [
-            0.4,
-            0.9025
+            0.6583,
+            0.8167
           ],
           "n_resamples": 1000,
           "seed": 42
