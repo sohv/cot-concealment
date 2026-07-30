@@ -1,0 +1,60 @@
+{
+  "note": "interim, computed from a partial generations.jsonl while the sweep is still running. superseded by tracking_report.json when the run completes. wald intervals, item level.",
+  "run_id": "sweep_v1",
+  "git_hash": "c7bdf57d",
+  "computed_at_utc": "2026-07-30T01:12:19+00:00",
+  "n_generations": 4400,
+  "n_generations_planned": 11520,
+  "generations_by_arm": {
+    "C3_neutral_private": 3840,
+    "C0_bare": 560
+  },
+  "truncation_rate": 0.0032,
+  "parse_fail_rate": 0.0025,
+  "parse_method": {
+    "json": 4384,
+    "prose": 5,
+    "none": 11
+  },
+  "gate_behavioral_tracking_min": 0.7,
+  "by_arm": {
+    "C3_neutral_private": {
+      "n_items_complete": 120,
+      "tracking_rate_all_placements": 0.625,
+      "ci_all_placements": [
+        0.5384,
+        0.7116
+      ],
+      "tracking_rate_heldout": 0.6417,
+      "ci_heldout": [
+        0.5559,
+        0.7275
+      ],
+      "per_placement": {
+        "V1": 0.9167,
+        "V2": 0.7417,
+        "V3": 0.75
+      },
+      "gate_tracking_passes": false
+    },
+    "C0_bare": {
+      "n_items_complete": 17,
+      "tracking_rate_all_placements": 0.4706,
+      "ci_all_placements": [
+        0.2333,
+        0.7079
+      ],
+      "tracking_rate_heldout": 0.6471,
+      "ci_heldout": [
+        0.4199,
+        0.8742
+      ],
+      "per_placement": {
+        "V1": 0.5882,
+        "V2": 0.6471,
+        "V3": 0.7059
+      },
+      "gate_tracking_passes": false
+    }
+  }
+}

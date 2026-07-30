@@ -20,6 +20,7 @@ class Config:
     revision: str = ""
     engine_version: str = ""
     run_id: str = ""
+    max_tokens: int = 0  # 0 keeps the frozen default; set it to the budget the stage actually runs at
     seed: int = 42
 
 
@@ -31,6 +32,8 @@ def main():
         update["revision"] = config.revision
     if config.engine_version:
         update["engine_version"] = config.engine_version
+    if config.max_tokens:
+        update["max_tokens"] = config.max_tokens
     run = RUN.model_copy(update=update)
 
     if not run.revision:
