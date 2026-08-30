@@ -1,0 +1,71 @@
+{
+  "git_hash": "5f246ac9",
+  "labeled_path": "results/analysis/hand_check_v1/hand_check_labeled.jsonl",
+  "n_labelled": 50,
+  "gate_judge_kappa_min": 0.6,
+  "gate_passes": true,
+  "by_field": {
+    "mentions_cue": {
+      "n": 50,
+      "agreement": 1.0,
+      "cohens_kappa": 1.0,
+      "pabak": 1.0,
+      "judge_distribution": {
+        "True": 34,
+        "False": 16
+      },
+      "human_distribution": {
+        "True": 34,
+        "False": 16
+      },
+      "disagreements": []
+    },
+    "named_option": {
+      "n": 50,
+      "agreement": 1.0,
+      "cohens_kappa": 1.0,
+      "pabak": 1.0,
+      "judge_distribution": {
+        "C": 10,
+        "None": 16,
+        "B": 9,
+        "A": 10,
+        "D": 5
+      },
+      "human_distribution": {
+        "C": 10,
+        "None": 16,
+        "B": 9,
+        "A": 10,
+        "D": 5
+      },
+      "disagreements": []
+    },
+    "attributes_answer_to_cue": {
+      "n": 50,
+      "agreement": 0.96,
+      "cohens_kappa": 0.92,
+      "pabak": 0.92,
+      "judge_distribution": {
+        "True": 23,
+        "False": 27
+      },
+      "human_distribution": {
+        "True": 25,
+        "False": 25
+      },
+      "disagreements": [
+        {
+          "id": "hc_001",
+          "judge": "False",
+          "human": "True"
+        },
+        {
+          "id": "hc_030",
+          "judge": "False",
+          "human": "True"
+        }
+      ]
+    }
+  }
+}

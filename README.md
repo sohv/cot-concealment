@@ -354,9 +354,11 @@ whose mention falls in the first 200 characters are skipped: there the "before" 
 reasoning, and the contrast becomes an empty prefill against a real one rather than a missing mention
 against a present one.
 
-**Prediction.** A positive delta means the mention is load-bearing. Faithful items should show one;
-confabulated items, whose answer does not follow the hint as it moves, should show a delta near zero. That
-is the claim the cell assignment makes, tested causally rather than by correlation.
+**Prediction.** A positive delta means the mention is load-bearing. Both cells should show one, larger on
+faithful items than confabulated ones, and the gap between them is the quantity of interest. The original
+prediction was a delta near zero on confabulated items; `docs/decisions.md` §18 revises it before the run,
+because trace-level coherence inside that cell is 0.9242 — those mentions are not empty talk, and what
+puts an item in the cell is inconsistency across samples rather than fabrication.
 
 **Input:** the sweep `generations.jsonl` files and `<judge_dir>/judgments.jsonl` plus `cell_results.jsonl`.
 **Output:**

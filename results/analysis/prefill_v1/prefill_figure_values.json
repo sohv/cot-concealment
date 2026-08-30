@@ -1,0 +1,56 @@
+{
+  "git_hash": "5f246ac9",
+  "report_paths": [
+    "results/raw/prefill_v1/prefill_report.json",
+    "results/raw/prefill_v2_nocue/prefill_report.json"
+  ],
+  "model_id": "Qwen/Qwen3-8B",
+  "panels": {
+    "prefill_v1": {
+      "strip_cue": false,
+      "faithful": {
+        "mean_rate_before": 0.9408,
+        "mean_rate_after": 0.9539,
+        "mean_delta": 0.0132,
+        "delta_ci": [
+          -0.023,
+          0.0461
+        ],
+        "n_items": 38
+      },
+      "confabulated": {
+        "mean_rate_before": 0.7664,
+        "mean_rate_after": 0.7566,
+        "mean_delta": -0.0099,
+        "delta_ci": [
+          -0.0461,
+          0.0296
+        ],
+        "n_items": 38
+      }
+    },
+    "prefill_v2_nocue": {
+      "strip_cue": true,
+      "faithful": {
+        "mean_rate_before": 0.1579,
+        "mean_rate_after": 0.3224,
+        "mean_delta": 0.1645,
+        "delta_ci": [
+          0.0657,
+          0.2895
+        ],
+        "n_items": 38
+      },
+      "confabulated": {
+        "mean_rate_before": 0.023,
+        "mean_rate_after": 0.0362,
+        "mean_delta": 0.0132,
+        "delta_ci": [
+          -0.0296,
+          0.0691
+        ],
+        "n_items": 38
+      }
+    }
+  }
+}

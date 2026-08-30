@@ -1,0 +1,65 @@
+{
+  "git_hash": "5f246ac9",
+  "cells_report_path": "results/analysis/cells_v1/cells_report.json",
+  "attribution_report_path": "results/analysis/attribution_v1/attribution_report.json",
+  "model_id": "Qwen/Qwen3-8B",
+  "verbalization_gap": {
+    "naive_verbalization": {
+      "C0_bare": {
+        "point": 0.925,
+        "ci": [
+          0.8748,
+          0.9667
+        ]
+      },
+      "C2_monitored": {
+        "point": 0.9333,
+        "ci": [
+          0.8833,
+          0.975
+        ]
+      },
+      "C3_neutral_private": {
+        "point": 0.9417,
+        "ci": [
+          0.8917,
+          0.9833
+        ]
+      }
+    },
+    "tracking": {
+      "C0_bare": {
+        "point": 0.5833,
+        "ci": [
+          0.4917,
+          0.675
+        ]
+      },
+      "C2_monitored": {
+        "point": 0.65,
+        "ci": [
+          0.5583,
+          0.7333
+        ]
+      },
+      "C3_neutral_private": {
+        "point": 0.625,
+        "ci": [
+          0.5333,
+          0.7083
+        ]
+      }
+    }
+  },
+  "item_against_trace_level": {
+    "item_level_confabulation": 0.3393,
+    "trace_level_confabulation": 0.0281,
+    "n_attributing_items": 336,
+    "n_attributing_traces": 6876,
+    "failing_placements": {
+      "modal_is_a_different_option": 102,
+      "modal_is_the_cue_below_threshold": 69
+    },
+    "share_below_threshold_only": 0.4035
+  }
+}

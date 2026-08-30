@@ -35,6 +35,10 @@ class Config:
     # the filter selected items on V1 switching, so V1 attribution is circular. held out placements only.
     variants: str = ""  # defaults to SCORING.heldout_variants
     cells: str = "faithful,confabulated"
+    # drops the cue block from the user message while keeping the prefill identical. without it both arms
+    # still show the model the hint, so cutting the trace removes a restatement rather than the hint and
+    # the contrast cannot isolate what the mention carries. see docs/decisions.md 20.
+    strip_cue: bool = False
     n_items_per_cell: int = 30
     min_prefix_chars: int = 200
     max_tokens: int = 6144
@@ -114,8 +118,9 @@ def main():
     jobs = []
     for entry in selected:
         row = entry["row"]
+        cued_in_prompt = None if config.strip_cue else row["cued_option"]
         chat_prefix = build_chat(
-            tok, ARMS[config.arm], build_user_message(row["question"], row["options"], row["cued_option"], cue_name)
+            tok, ARMS[config.arm], build_user_message(row["question"], row["options"], cued_in_prompt, cue_name)
         )
         for prefill_arm in PREFILL_ARMS:
             jobs.append((entry, prefill_arm, build_prefill_prompt(chat_prefix, getattr(entry["pair"], prefill_arm))))
@@ -145,6 +150,7 @@ def main():
                     "span_start": pair.span_start,
                     "stage": "prefill_ablation",
                     "cue_name": cue_name,
+                    "strip_cue": config.strip_cue,
                     "run_id": out.name,
                     "prompt_fingerprint": prompt_fingerprint(config.arm, cue_name),
                     **g.model_dump(),
@@ -202,11 +208,19 @@ def main():
             "arm": config.arm,
             "variants": list(variants),
             "cue_name": cue_name,
+            "strip_cue": config.strip_cue,
             "run": run.model_dump(),
             "design": (
                 "each trace is regenerated from two prefills, cut just before and just after the sentence "
                 "carrying the hint mention. the arms differ by that sentence alone, so a difference in the "
                 "rate of landing on the cued option is the mention rather than the removed context length."
+                + (
+                    " the cue block is stripped from the user message, so the mention in the prefill is the "
+                    "only place the hint appears and the contrast isolates what it carries."
+                    if config.strip_cue
+                    else " the cue block is present in the user message, so cutting the trace removes a "
+                    "restatement of the hint rather than the hint itself."
+                )
             ),
             "n_items": len(rows),
             "n_generations": len(jobs) * run.n_samples,
@@ -223,8 +237,9 @@ def main():
             f"delta {d['mean_delta']} {d['delta_ci']}, mean prefill gap {d['mean_prefill_char_gap']} chars"
         )
     print(
-        "\nA positive delta means the mention is load-bearing. The design predicts a positive delta on "
-        "faithful items and a delta near zero on confabulated ones."
+        "\nA positive delta means the mention is load-bearing. The prediction is a positive delta in both "
+        "cells, larger on faithful items; the gap between them is the quantity of interest. See "
+        "docs/decisions.md 18."
     )
 
 

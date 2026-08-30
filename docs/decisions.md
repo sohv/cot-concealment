@@ -229,6 +229,10 @@ same as dropping them from the denominator: the truncation rate remains its own 
   does not contain the span) is needed to isolate the mention.
 - **Judge kappa on a cell-stratified sample** is prevalence-distorted and not comparable across cells.
   Report per-field agreement on a random sample alongside it, plus PABAK for the confabulation cell.
+- **The prefill ablation does not isolate the mention.** Both arms carry the full user message, cue block
+  included, so cutting the trace removes a restatement of the hint while the hint itself stays visible in
+  the prompt. The 260830 run is null in both cells and cannot be read as evidence either way. A cue-absent
+  prefill arm is needed before any causal claim about the mention.
 - **Token budget.** 4096 max_tokens on verbose thinking traces over `mmlu_professional_law` may breach the
   2 percent truncation gate. The filter stage produces ~4,800 generations before the sweep; read the
   truncation and parse failure rates off it and adjust before committing to the sweep.
@@ -254,3 +258,40 @@ nothing: all 113 candidate items on the C3 arm yield a usable pair.
 is the causal test of the confabulation finding: the mention should be load-bearing on faithful items and
 inert on confabulated ones. A positive delta in both would say the cell split is not measuring what the
 design claims.
+
+### 18. The prefill ablation's prediction, revised before the run
+
+§17 predicted a positive delta on faithful items and a delta near zero on confabulated ones, and said a
+positive delta in both would mean the cell split is not measuring what the design claims. That was
+written before the trace-level attribution analysis and it is now the wrong prediction. Recorded here
+rather than by editing §17, so the original and the reason for revising it both stay legible, and so the
+order is auditable: the result that motivates this is the 260830 attribution entry in `research_log.md`,
+dated before the ablation runs.
+
+**What changed.** Inside confabulated items, an individual trace that credits the hint answers the cued
+option 92.4% of the time (0.9242 against 0.9923 on faithful items). The mentions in that cell are not
+empty talk. What puts an item in the confabulated cell is inconsistency across its eight samples — 5.44
+attributing traces per placement against 7.26 on faithful items — meeting a 6-of-8 modal rule and an
+all-three-placements rule. Noisy, not fabricating.
+
+**Revised prediction.** A positive delta in both cells, larger on faithful items than confabulated ones.
+The quantity of interest is the gap between the two cells, not whether the confabulated delta is
+distinguishable from zero. A confabulated delta near zero would now be the surprising result and would
+say the trace-level coherence number does not survive a causal test.
+
+**What would falsify the reading.** Deltas that are equal across the two cells, which would say the cell
+assignment separates nothing causal; or a faithful delta near zero, which would say the mention is not
+load-bearing anywhere and the attribution labels track something other than influence.
+
+### 19. The ablation runs on different hardware than the traces it ablates
+
+The sweep's 11,520 generations came off an L4. This box is an A10 (23 GB) on driver 580.105.08 / CUDA
+13.0; the pinned `torch==2.6.0+cu124` initializes on it. Qwen3-8B at bfloat16 is 15.3 GiB, so the memory
+budget is as §10 describes and no config changes.
+
+The ablation's contrast is within-run — both prefill arms are generated in the same session on the same
+card — so the comparison is not confounded by the change. What the change does affect is any comparison
+between an ablation generation and the original sweep trace it was built from: batched inference is not
+bitwise deterministic even on fixed hardware, as `src/generation/engine.py` records, and this adds a
+hardware difference on top. No such comparison is made. `config.json` carries the engine and the run
+config; the card is named here because the config dump does not record it.

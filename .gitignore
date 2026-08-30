@@ -3,7 +3,6 @@ __pycache__/
 .venv/
 .env
 
-!results/raw/.gitkeep
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
