@@ -11,9 +11,14 @@ Model: `Qwen/Qwen3-8B` in thinking mode, bfloat16, vLLM, condition `C3_neutral_p
 ## Setup
 
 ```bash
-uv sync
+uv sync --extra judge
 uv run pre-commit install
+cp .env.example .env   # then fill in OPENROUTER_API_KEY
 ```
+
+Generation is the only stage that needs a GPU, and the vLLM pin does not resolve on macOS, so the
+inference stack is the `gpu` extra rather than a base dependency. On the GPU box: `uv sync --extra gpu`.
+The judge, the placement analysis and the cell analysis all read rows off disk and run anywhere.
 
 The inference stack is pinned in `pyproject.toml` and must match the local CUDA driver. On this box the
 driver is 550.144.03 (CUDA 12.4), so the stack is `vllm==0.8.5.post1`, `torch==2.6.0+cu124`,
@@ -33,7 +38,8 @@ src/generation/  prompting, sampling, trace parsing
 src/metrics/     cell assignment, bootstrap intervals, threshold sensitivity
 src/utils/       io helpers, git hash, float rounding
 scripts/         entry points, one per pipeline stage
-results/raw/     generation outputs, append-only, one subfolder per run
+results/raw/     generation and judge outputs, append-only, one subfolder per run
+results/analysis/ derived reports and figures, one subfolder per analysis
 tests/           tests for parsing and scoring logic
 docs/            experimental design and pre-registered decisions
 ```
@@ -48,10 +54,12 @@ Stages run in this order. The scoring rules and gates are frozen before the firs
 | build item pool | `scripts/build_pool.py` | 300 items → 1,200 variants |
 | behavioural filter (V0, V1) | `scripts/run_filter.py` | 4,800 generations |
 | sweep (V0–V3 × 3 arms) | `scripts/run_sweep.py` | 11,520 generations |
-| judge | not yet written | 6,400 calls |
-| hand label | manual | 50 items |
-| prefill ablation | not yet written | ~1,000 generations |
-| analyse | not yet written | — |
+| placement analysis | `scripts/analyze_placement.py` | — |
+| judge | `scripts/run_judge.py` | 11,485 calls |
+| analyse cells | `scripts/analyze_cells.py` | — |
+| analyse attribution | `scripts/analyze_attribution.py` | — |
+| hand check | `scripts/sample_hand_check.py` | 50 traces |
+| prefill ablation | `scripts/run_prefill_ablation.py` | 960 generations |
 
 ## Framing arms
 
@@ -186,6 +194,192 @@ uv run -m scripts.run_sweep \
 
 Run at seed 42 over 120 survivors: tracking across all three placements is 0.583 to 0.650 depending on
 arm, against a 0.70 gate — not met by any arm. See `research_log.md` for the reading.
+
+## Stage: placement analysis
+
+Re-aggregates the finished sweep by placement rather than by arm: the variant index, the option letter
+carrying the cue, and how many of an item's three placements track. Reads existing rows, no engine and no
+GPU. Intervals are item-clustered, and the letter test permutes an item's own three letters over its own
+three outcomes, which is exactly the null the seeded distractor map creates.
+
+**Input:** `<sweep_dir>/tracking_results.jsonl` and `data/processed/variants_seed<seed>.jsonl`, joined on
+`item_id` for the distractor map the tracking rows do not carry.
+**Output:** `<output_dir>/placement_report.json` — per variant, per cued letter and per correct letter
+rates with clustered intervals; the letter permutation test over all placements and over the held out
+pair; the placements-tracking-per-item distribution against its binomial; and a post hoc compound
+breakdown by how many placements land on a weak letter.
+
+**Run:**
+```bash
+uv run -m scripts.analyze_placement \
+  --tracking_results_path results/raw/sweep_v1_resume/tracking_results.jsonl \
+  --variants_path data/processed/variants_seed42.jsonl \
+  --output_dir results/analysis/placement_v1 \
+  --seed 42
+```
+
+Run at seed 42: the two fresh placements are indistinguishable (V2 0.750, V3 0.739) so there is no decay
+across successive swaps, but tracking depends on which letter carries the cue — held out, B 0.845 and
+C 0.781 against A 0.687 and D 0.660, permutation p = 0.0010. Tracking is also strongly item-level rather
+than a per placement coin flip. See `research_log.md`.
+
+## Stage: judge
+
+Reads each sweep think block and reports whether it credits the planted scoring condition and which
+option letter it says that condition names, then assigns the four cells with `metrics.scoring.assign_cell`.
+No GPU; this calls an external judge through OpenRouter, so it needs `OPENROUTER_API_KEY` in `.env` —
+copy `.env.example`. Calls are disk-cached on model plus messages, so a killed run resumes for free.
+
+The judge is never told which option carries the cue. It reports the letter the trace names and the
+scoring layer compares that to the true one, which is what makes staleness measurable. Truncated traces
+are skipped, since `score_variant` excludes them from every cell anyway.
+
+**Input:** the sweep `generations.jsonl` files, comma separated. A resumed sweep splits its rows across
+the prior run's file and the resume's, and neither holds a complete arm set alone, so both are required.
+**Output:**
+- `<output_dir>/judgments.jsonl` — per trace: `mentions_cue`, `named_option`, `attributes_answer_to_cue`,
+  `evidence_span`, `span_match_ok`, `judge_ok`, `judge_error`
+- `<output_dir>/cell_results.jsonl` — per item per arm: `cell`, `tracks`, `attributes`, `stale_frac`
+- `<output_dir>/judge_report.json` — parse-ok and span-match rates, the V0 false attribution rate against
+  its gate, and per arm cell bootstraps plus the threshold sensitivity grid
+
+**Run:**
+```bash
+uv run -m scripts.run_judge \
+  --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl \
+  --output_dir results/raw/judge_v1 \
+  --judge_model openai/gpt-4.1-mini \
+  --max_concurrent 40 \
+  --seed 42
+```
+
+## Stage: analyse
+
+Pulls the four cell assignments together across arms, computes the correction factor, and plots the
+headline comparison. The correction factor is corrected faithfulness over the naive rate: below 1 the
+mention-only metric overstates how often a hint that really drives the answer gets verbalized, above 1 it
+understates. Both come off the same bootstrap resample, so the ratio's interval is paired.
+
+**Input:** `<judge_dir>/cell_results.jsonl`, `<judge_dir>/judge_report.json`, and the sweep's
+`tracking_results.jsonl`.
+**Output:**
+- `<output_dir>/cells_report.json` — per arm cell counts, tracking, naive verbalization, corrected
+  faithfulness, correction factor and confabulation rate with intervals; paired arm deltas over shared
+  items; the sensitivity grid per arm
+- `<output_dir>/figures/tracking_vs_verbalization.png`
+
+**Run:**
+```bash
+uv run -m scripts.analyze_cells \
+  --judge_dir results/raw/judge_v1 \
+  --tracking_results_path results/raw/sweep_v1_resume/tracking_results.jsonl \
+  --output_dir results/analysis/cells_v1 \
+  --model_id Qwen/Qwen3-8B \
+  --seed 42
+```
+
+## Stage: attribution analysis
+
+Asks at the trace level what the cell assignment can only ask at the item level: does a trace that
+credits the hint also answer the hint, in that same trace. Also decomposes the confabulated cell into
+placements that missed the 6-of-8 modal bar with the cue still modal, against placements where the model
+genuinely answered something else, and crosses both against the option letter carrying the cue.
+
+This exists because the four cells aggregate 24 traces and three placements before comparing, so an item
+can be scored confabulated without any single trace having credited a hint it did not follow. Run at seed
+42 that is most of what the cell measures — see `research_log.md`.
+
+**Input:** `<judge_dir>/judgments.jsonl`, `<judge_dir>/cell_results.jsonl`, and the sweep's
+`tracking_results.jsonl`.
+**Output:** `<output_dir>/attribution_report.json` and
+`<output_dir>/figures/credit_against_follow.png`.
+
+**Run:**
+```bash
+uv run -m scripts.analyze_attribution \
+  --judge_dir results/raw/judge_v1 \
+  --tracking_results_path results/raw/sweep_v1_resume/tracking_results.jsonl \
+  --output_dir results/analysis/attribution_v1 \
+  --model_id Qwen/Qwen3-8B \
+  --seed 42
+```
+
+## Stage: hand check
+
+Draws a cell-stratified sample of judged traces into a blind labelling sheet, then scores the completed
+sheet against the judge. The human does the judge's task on the judge's inputs, blind to its answer and
+to which option carries the cue — the comparison means nothing otherwise. V0 traces are carried as their
+own stratum, since an uncued trace is where a false positive lives.
+
+Kappa on a stratified sample has a manufactured prevalence, so PABAK is reported beside it and every
+disagreement is listed rather than summarized away.
+
+**Input:** `<judge_dir>/judgments.jsonl`, `<judge_dir>/cell_results.jsonl`, and the sweep
+`generations.jsonl` files for the trace text.
+**Output:** `<output_dir>/hand_check_sheet.jsonl` (blind, with null label fields),
+`hand_check_sheet.md` (the same traces rendered for reading), `hand_check_key.jsonl` (the judge's
+answers, not to be opened before labelling), and after scoring `hand_check_report.json` — per field
+agreement, Cohen's kappa, PABAK, label distributions and the disagreement list.
+
+**Run:**
+```bash
+uv run -m scripts.sample_hand_check \
+  --judge_dir results/raw/judge_v1 \
+  --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl \
+  --output_dir results/analysis/hand_check_v1 \
+  --n_traces 50 \
+  --seed 42
+```
+
+Write labels into `hand_check_labeled.jsonl` as `{"id": ..., "mentions_cue": ..., "named_option": ...,
+"attributes_answer_to_cue": ...}` per line, then score:
+
+```bash
+uv run -m scripts.sample_hand_check \
+  --judge_dir results/raw/judge_v1 \
+  --output_dir results/analysis/hand_check_v1 \
+  --labeled_path results/analysis/hand_check_v1/hand_check_labeled.jsonl
+```
+
+## Stage: prefill ablation
+
+The causal check, and the one stage that needs a GPU. Each selected trace is regenerated twice: once
+prefilled up to just before the sentence carrying the hint mention, once up to just after it. Both cuts
+are sentence-aligned, so the two prefills differ by that sentence and nothing else — the length gap is
+the mention's own length rather than everything downstream of it, which is the confound
+`docs/decisions.md` left open.
+
+Held out placements only, since the filter selected items on V1 and its attribution is circular. Items
+whose mention falls in the first 200 characters are skipped: there the "before" arm carries almost no
+reasoning, and the contrast becomes an empty prefill against a real one rather than a missing mention
+against a present one.
+
+**Prediction.** A positive delta means the mention is load-bearing. Faithful items should show one;
+confabulated items, whose answer does not follow the hint as it moves, should show a delta near zero. That
+is the claim the cell assignment makes, tested causally rather than by correlation.
+
+**Input:** the sweep `generations.jsonl` files and `<judge_dir>/judgments.jsonl` plus `cell_results.jsonl`.
+**Output:**
+- `<output_dir>/generations.jsonl` — one row per generation, plus `prefill_arm`, `cell`, `n_prefill_chars`
+- `<output_dir>/prefill_results.jsonl` — per item: `rate_before`, `rate_after`, `delta`, prefill lengths
+- `<output_dir>/prefill_report.json` — per cell mean rates, the delta with an item-level bootstrap
+  interval, and the mean prefill character gap so the length match is auditable
+
+**Run:**
+```bash
+uv run -m scripts.run_prefill_ablation \
+  --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl \
+  --judge_dir results/raw/judge_v1 \
+  --output_dir results/raw/prefill_v1 \
+  --model_id Qwen/Qwen3-8B \
+  --max_tokens 6144 \
+  --n_items_per_cell 30 \
+  --seed 42
+```
+
+At seed 42 every candidate item yields a usable prefill pair — 75 faithful and 38 confabulated available
+on the C3 arm — so `--n_items_per_cell 30` gives 60 items, 960 generations. Raise it to 38 to use the
+whole confabulated pool.
 
 ## The four cells
 

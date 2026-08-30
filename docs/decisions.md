@@ -178,6 +178,50 @@ share. The filter was not rerun at 6144, so survivors are conditioned on the tig
 The generation-side "truncation rate" (hit the token cap) and the control that prefills a shortened think
 block are different things. The control is called the **prefill ablation**.
 
+## 260830 — judge stage
+
+### 14. The judge prompt names a scoring condition, and was calibrated against V0 before the full run
+
+§11 left this open: the cue became `grader_code`, so a judge still hunting for "a previous grader,
+reviewer note, marked answer" would under-detect the cue this run actually planted. `JUDGE_SYSTEM` in
+`src/generation/judge.py` now describes a metadata block stating a scoring condition — an assertion on
+the response field, an answer key, a stated expected response. The don't-correct-a-stale-letter
+instruction survives the rewrite verbatim and is asserted by a test, because the staleness measurement is
+carried entirely by it: a judge that silently fixes a stale letter turns every confabulated item faithful.
+
+**The judge is never told which option carries the cue.** It reports the letter the trace names, and the
+scoring layer compares that to the true cued option. Handing it the answer would destroy the staleness
+signal the design exists to measure.
+
+**Calibration, and what it was tuned on.** The first draft of the prompt scored a false attribution rate
+of 0.10 on a random 40 V0 traces, against a 0.05 gate. V0 carries no cue at all, so every mention there
+is a false positive and the rate is a specificity measurement on known negatives. The failures were all
+one kind: the judge counted the trace's own conclusion ("the answer is D) Hepatitis C") and the question's
+own content ("the statute does not mention any requirement of criminal intent") as an external
+indication. The prompt now states explicitly that neither is the scoring hint. Re-measured on 100 fresh
+V0 traces the rate is 0.000.
+
+**Disclose:** the prompt was iterated against V0, which is a known-negative set and not an outcome, but
+the same calibration run also printed V1 detection rates and those were seen before the full run was
+launched — 0.925 mentions on the first draft, 0.960 on the revision, with attribution at 0.840. The
+revision was adopted on the V0 specificity gain, and sensitivity rose rather than fell, so no
+detection/false-positive trade was made. It is still not a blind instrument choice and should not be
+described as one.
+
+### 15. The judge reads both halves of the resumed sweep
+
+`sweep_v1_resume/generations.jsonl` holds only the 7,120 rows that run generated; the 4,400 rows folded
+in by `--resume_from` stay in `sweep_v1/generations.jsonl`. The union is the sweep, the two files do not
+overlap, and neither is a complete arm set on its own — `sweep_v1` holds C3 plus 560 C0 rows, the resume
+holds C2 plus the rest of C0. `--generations_paths` is therefore comma separated and refuses any
+generation that appears in more than one input file.
+
+### 16. Truncated traces are not judged
+
+A truncated trace has no closing think block and `score_variant` excludes it from every cell, so judging
+it is spend with nowhere to land. 35 of 11,520 are skipped and the count is reported. This is not the
+same as dropping them from the denominator: the truncation rate remains its own gate.
+
 ## Open, not yet decided
 
 - **Prefill ablation confound.** Cutting before the evidence span removes the mention and everything
@@ -188,3 +232,25 @@ block are different things. The control is called the **prefill ablation**.
 - **Token budget.** 4096 max_tokens on verbose thinking traces over `mmlu_professional_law` may breach the
   2 percent truncation gate. The filter stage produces ~4,800 generations before the sweep; read the
   truncation and parse failure rates off it and adjust before committing to the sweep.
+
+### 17. The prefill ablation cuts before and after the mention sentence
+
+The open item said a length-matched arm was needed because cutting before the evidence span removes the
+mention and everything downstream of it. Resolved by cutting the same trace twice, at sentence
+boundaries either side of the mention: "before" ends at the last sentence preceding it, "after" ends at
+the end of the mention sentence. Neither arm carries the reasoning that followed, so the difference
+between them is the mention alone and the prefill length gap is the mention sentence rather than the
+whole remainder of the trace. The gap is written to the report per cell so the match is auditable.
+
+Rejected: splicing the span out of an otherwise complete trace, which leaves the downstream reasoning
+free to refer back to a sentence that is no longer there; and matching against a cut at the same token
+offset in a different trace, which controls length but introduces a content difference in its place.
+
+Items whose mention falls within the first 200 characters are dropped. There the "before" arm holds
+almost no reasoning and the contrast is an empty prefill against a real one. At seed 42 this drops
+nothing: all 113 candidate items on the C3 arm yield a usable pair.
+
+**What it now tests.** With the silent cell empty, the ablation is no longer a check on concealment. It
+is the causal test of the confabulation finding: the mention should be load-bearing on faithful items and
+inert on confabulated ones. A positive delta in both would say the cell split is not measuring what the
+design claims.

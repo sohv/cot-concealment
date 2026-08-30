@@ -3,9 +3,12 @@ name = "cue-swap"
 version = "0.1.0"
 description = "Cue swap validation experiment: separating hint mention from hint influence"
 requires-python = ">=3.10"
+# generation is the only stage that needs a gpu. the judge, the placement analysis and the cell
+# analysis all read rows off disk, so the base install stays importable on a laptop.
 dependencies = [
     "datasets<4",
     "huggingface-hub>=0.30,<1.0",
+    "matplotlib",
     "numpy",
     "pandas",
     "pyarrow",
@@ -15,8 +18,6 @@ dependencies = [
     "setuptools>=83.0.0",
     "simple-parsing",
     "tqdm",
-    "transformers==4.51.3",
-    "vllm==0.8.5.post1",
 ]
 
 [project.optional-dependencies]
@@ -26,9 +27,14 @@ dev = [
     "pre-commit",
     "ruff",
 ]
-judge = ["anthropic"]
-# the inference stack is installed separately on the gpu box, since vllm and torch must match the
-# local cuda build: uv pip install "vllm==<pin>" transformers
+# openrouter speaks the openai protocol, so the openai sdk points at its base url unchanged.
+judge = ["openai>=1.40"]
+# the inference stack is pinned to the gpu box's cuda build and does not resolve on macos, so it is an
+# extra rather than a base dependency: uv sync --extra gpu
+gpu = [
+    "transformers==4.51.3",
+    "vllm==0.8.5.post1",
+]
 
 [tool.ruff]
 line-length = 120
