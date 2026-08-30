@@ -273,64 +273,41 @@ attribution and so does not inflate the coherence figure.
 uv run -m scripts.sample_hand_check --judge_dir results/raw/judge_v1 --output_dir results/analysis/hand_check_v1 --labeled_path results/analysis/hand_check_v1/hand_check_labeled.jsonl
 **Output:** results/analysis/hand_check_v1/hand_check_report.json
 
-## 260830 — prefill v2, cue stripped: the mention is load-bearing on faithful items
+## 260830 — prefill v2, cue stripped: the two ablation arms bracket what the mention carries
 
-**What:** the third arm §19 called for. Identical to prefill_v1 except `--strip_cue` drops the cue block
-from the user message (`cued_option=None` -> `cue_block=""`), so the trace's own mention is the only
-place the hint appears and the before/after contrast isolates what the mention carries. C3 arm, held-out
-V2/V3, 76 items, 1,216 generations.
+**What:** the cue-absent arm §19 called for, and the second half of a pair. `--strip_cue` drops the cue
+block from the user message (`cued_option=None` -> `cue_block=""`) while the prefills stay identical, so
+the trace's own mention becomes the only place the hint appears. C3 arm, held-out V2/V3, 76 items,
+1,216 generations. Read with prefill_v1, not instead of it.
 **Result:** faithful 0.1579 -> 0.3224, delta +0.1645 CI [0.0657, 0.2895], excludes zero.
 Confabulated 0.0230 -> 0.0362, delta +0.0132 CI [-0.0296, 0.0691], straddles zero.
-This is §17's prediction and the first causal evidence for it.
-**The ceiling fix worked, and that is why v2 is informative where v1 was not.** The faithful before-arm
-fell from 0.9408 to 0.1579 once the cue left the prompt. v1 had mean headroom 0.0592 with 27 of 38 items
-pinned at 8 of 8; the cell now sits below chance at baseline with room to move in either direction.
-Removing the cue took away the before-arm's independent route to the cued option, exactly as predicted.
-**What the faithful number licenses.** A clean causal claim. Same items, paired before/after, differing
-by one sentence, length matched at 112.1 vs 98.9 chars. Deleting the mention roughly halves the rate of
-landing on the cue. The effect is concentrated rather than diffuse — 10 of 38 items move, 27 are
-unchanged, 1 negative — and the item-level bootstrap already prices that in.
-**What the confabulated null does not license, and this is the one to be careful about.** `confabulated`
-is defined as `attributes and (not tracks or is_stale)` (scoring.py:121), so these items were *selected*
-for not landing on the cue. Measuring how often they land on the cue afterwards is substantially
-definitional, and a near-zero rate in both arms is close to guaranteed by the selection. "The mention is
-inert on confabulated items" is therefore not established by this run. The honest form is narrower: the
-mention is load-bearing where the model already followed the cue, and this design cannot say much about
-where it did not.
-**Also untested:** the faithful-vs-confabulated gap, which §18 called the quantity of interest. The
-report gives a CI per cell, and two non-overlapping CIs are not a test of their difference. A paired
-test on the delta difference would need the cells to be comparable, which the selection above prevents.
+**Neither run on its own is the causal test, and reporting either alone would be wrong.** They are
+distorted in opposite and identifiable directions, which is what makes the pair worth more than the
+halves. v1 keeps the cue in the prompt, so deleting the mention deletes a restatement while the hint
+stays visible and the model can re-read it — that understates what the mention carries, and the faithful
+before-arm at 0.9408 with 0.0592 mean headroom could barely express a positive delta anyway. v2 removes
+the cue, so the mention is the sole carrier of a hint it does not normally have to carry alone — that
+overstates it. Cutting the other way in v2, the after-arm's trace now refers to a metadata block absent
+from the prompt, an incoherent context the model may discount as its own error, which drags the estimate
+down. So v2 is not a clean upper bound either.
+**What the pair establishes.** The mention is not inert — v2 rules that out, and does so on a cell whose
+baseline finally has room to move, 0.1579 against v1's ceiling-bound 0.9408. And the mention is not the
+whole route to the cue in the natural condition — v1 rules that out, since deleting it changes nothing
+while the prompt still states the hint. The effect in the condition the sweep actually ran under lies
+between the two, and neither run locates it. Quoting v2's +0.1645 as "the causal test of attribution"
+would be the tempting error, because it is the arm that worked.
+**§18's revised prediction did not survive, and it named this outcome as its own falsifier.** §18
+predicted a positive delta in both cells with the gap as the quantity of interest, and said a
+confabulated delta near zero "would be the surprising result and would say the trace-level coherence
+number does not survive a causal test." The confabulated delta is near zero. Recorded as a miss rather
+than reinterpreted.
+**But the confabulated cell cannot carry that weight either.** It is defined as
+`attributes and (not tracks or is_stale)` (scoring.py:121), so these items were selected for not landing
+on the cue, and its v2 before-arm sits at 0.0230 — 0.18 of 8 samples. A cell selected for not tracking,
+measured on how often it tracks, starting near floor. The null there is close to uninformative, and
+§18's falsifier was written without noticing that the test it named could not have come out any other
+way. That is a design fault in the prediction, not a result.
 **Command:**
 uv run -m scripts.run_prefill_ablation --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl --judge_dir results/raw/judge_v1 --output_dir results/raw/prefill_v2_nocue --model_id Qwen/Qwen3-8B --max_tokens 6144 --n_items_per_cell 38 --strip_cue --gpu_memory_utilization 0.90 --seed 42
-**Output:** results/raw/prefill_v2_nocue/prefill_report.json, generations.jsonl
-
-## 260830 — cue-absent prefill ablation: the mention is load-bearing on faithful items and inert on confabulated ones
-
-**What:** The prefill ablation rerun with `--strip_cue`, which drops the cue block from the user message
-while leaving the prefills byte-identical. In the 260830 run above, both arms carried the hint in the
-prompt, so cutting the trace removed a restatement rather than the hint and the contrast was null by
-construction. With the cue stripped, the prefilled trace is the only place the hint appears. Same 76
-items, same seed, 1,216 generations, 28 min on the A10.
-**Result:** The contrast the design was built to make, and it separates the two cells.
-faithful delta **+0.1645 [0.0657, 0.2895]**, interval excludes zero, positive on 10 of 38 items.
-confabulated delta +0.0132 [-0.0296, 0.0691], interval includes zero, positive on 1 of 38.
-**This vindicates §17 and refutes §18.** §17 predicted the mention would be load-bearing on faithful
-items and inert on confabulated ones, which is exactly what the cue-absent arm shows. §18 revised that
-to a positive delta in both cells on the strength of the trace-level coherence result, and the
-confabulated cell is null. The revision was wrong. Registering it before the run is what makes this
-readable as a result rather than a story.
-**The ceiling is gone and that is why the contrast appears.** Stripping the cue drops the cued-option
-rate from 0.9408 to 0.1579 on faithful items and from 0.7664 to 0.0230 on confabulated ones, and takes
-the at-ceiling count from 27 of 38 to 2 of 38. The 260830 null was a measurement failure, not a finding.
-**Scale, and it bounds the claim.** With the hint only in the trace, faithful items reach 0.3224 against
-0.9408 when the cue sits in the prompt. The mention recovers roughly a fifth of the cue's total effect,
-so the prompt cue is the dominant driver and the mention is a real but secondary causal contributor.
-**Caveat, and it is not small.** Stripping the cue leaves the prefilled trace referring to a hint the
-prompt no longer contains — the trace asserts a scoring condition against a question that has none. That
-is an incoherent context and the model may discount the reference for that reason, so this is "mention
-of an absent hint" rather than a clean mention-alone condition. The two arms bracket the quantity: v1
-shows the mention is redundant when the hint is visible, v2 shows it carries a real but partial effect
-when it is the only source. Neither is the ideal isolation.
-**Command:**
-uv run -m scripts.run_prefill_ablation --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl --judge_dir results/raw/judge_v1 --output_dir results/raw/prefill_v2_nocue --model_id Qwen/Qwen3-8B --max_tokens 6144 --n_items_per_cell 38 --strip_cue --gpu_memory_utilization 0.90 --seed 42
-**Output:** results/raw/prefill_v2_nocue/prefill_report.json, prefill_results.jsonl
+**Output:** results/raw/prefill_v2_nocue/prefill_report.json, prefill_results.jsonl, generations.jsonl
+**Reads with:** results/raw/prefill_v1/prefill_report.json and the 260830 prefill_v1 entry above.

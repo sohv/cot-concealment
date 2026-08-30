@@ -59,7 +59,7 @@ Stages run in this order. The scoring rules and gates are frozen before the firs
 | analyse cells | `scripts/analyze_cells.py` | — |
 | analyse attribution | `scripts/analyze_attribution.py` | — |
 | hand check | `scripts/sample_hand_check.py` | 50 traces |
-| prefill ablation | `scripts/run_prefill_ablation.py` | 960 generations |
+| prefill ablation (2 arms) | `scripts/run_prefill_ablation.py` | 1,216 generations each |
 
 ## Framing arms
 
@@ -343,7 +343,10 @@ uv run -m scripts.sample_hand_check \
 
 ## Stage: prefill ablation
 
-The causal check, and the one stage that needs a GPU. Each selected trace is regenerated twice: once
+The causal check, and the one stage that needs a GPU. It runs as **two arms that must be reported
+together** — `prefill_v1` with the cue present in the prompt and `prefill_v2_nocue` with `--strip_cue`
+removing it. Neither is the causal test on its own; `docs/decisions.md` §20 gives the reasoning and
+supersedes §17's single-run framing. Each selected trace is regenerated twice: once
 prefilled up to just before the sentence carrying the hint mention, once up to just after it. Both cuts
 are sentence-aligned, so the two prefills differ by that sentence and nothing else — the length gap is
 the mention's own length rather than everything downstream of it, which is the confound
@@ -354,11 +357,25 @@ whose mention falls in the first 200 characters are skipped: there the "before" 
 reasoning, and the contrast becomes an empty prefill against a real one rather than a missing mention
 against a present one.
 
-**Prediction.** A positive delta means the mention is load-bearing. Both cells should show one, larger on
-faithful items than confabulated ones, and the gap between them is the quantity of interest. The original
-prediction was a delta near zero on confabulated items; `docs/decisions.md` §18 revises it before the run,
-because trace-level coherence inside that cell is 0.9242 — those mentions are not empty talk, and what
-puts an item in the cell is inconsistency across samples rather than fabrication.
+**Prediction, registered before the runs.** A positive delta means the mention is load-bearing. §17
+predicted positive on faithful and near zero on confabulated; §18 revised that to positive in both, larger
+on faithful, with the gap as the quantity of interest, because trace-level coherence inside the
+confabulated cell is 0.9242. §18's prediction missed — see below and §20.
+
+**Outcome — read the two arms as a pair.** With the cue present (`prefill_v1`) both cells are null:
+faithful delta +0.0132 CI [-0.0230, 0.0461]. Deleting the mention removes a restatement while the hint
+stays visible in the prompt, and the faithful before-arm is ceiling-bound at 0.9408. With the cue stripped
+(`prefill_v2_nocue`) the faithful delta is +0.1645 CI [0.0657, 0.2895], on a before-arm that has dropped
+to 0.1579 and can finally move; confabulated stays null at +0.0132 CI [-0.0296, 0.0691].
+
+Each arm is distorted in a known direction — v1 measures the mention against a context that already
+supplies the hint, v2 makes the mention the sole carrier of a hint it does not normally carry alone, while
+its trace refers to a metadata block absent from the prompt. Together they establish that the mention is
+not inert and is also not the only route to the cue in the natural condition. The magnitude under the
+prompt the sweep actually used lies between them, and neither run gives it. Do not quote v2's +0.1645 as
+the causal test of attribution; it is the arm that worked, which is exactly why it is the tempting error.
+The confabulated null is separately uninformative: `assign_cell` selects that cell for *not* tracking, so
+its 0.0230 before-arm is a floor.
 
 **Input:** the sweep `generations.jsonl` files and `<judge_dir>/judgments.jsonl` plus `cell_results.jsonl`.
 **Output:**
@@ -379,9 +396,26 @@ uv run -m scripts.run_prefill_ablation \
   --seed 42
 ```
 
+Then the cue-stripped arm, identical but for `--strip_cue`:
+
+```bash
+uv run -m scripts.run_prefill_ablation \
+  --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl \
+  --judge_dir results/raw/judge_v1 \
+  --output_dir results/raw/prefill_v2_nocue \
+  --model_id Qwen/Qwen3-8B \
+  --max_tokens 6144 \
+  --n_items_per_cell 38 \
+  --strip_cue \
+  --seed 42
+```
+
+`--strip_cue` drops the cue block from the user message and is recorded on every output row and in the
+report, so the two runs are distinguishable after the fact.
+
 At seed 42 every candidate item yields a usable prefill pair — 75 faithful and 38 confabulated available
 on the C3 arm — so `--n_items_per_cell 30` gives 60 items, 960 generations. Raise it to 38 to use the
-whole confabulated pool.
+whole confabulated pool, which is what both reported runs do: 76 items, 1,216 generations each.
 
 ## The four cells
 

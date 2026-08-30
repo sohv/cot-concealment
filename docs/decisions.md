@@ -295,3 +295,45 @@ between an ablation generation and the original sweep trace it was built from: b
 bitwise deterministic even on fixed hardware, as `src/generation/engine.py` records, and this adds a
 hardware difference on top. No such comparison is made. `config.json` carries the engine and the run
 config; the card is named here because the config dump does not record it.
+
+### 20. The ablation is two arms, and neither is the causal test alone
+
+The open item above says the ablation does not isolate the mention, because both arms carry the full user
+message and cutting the trace removes a restatement of the hint rather than the hint. `--strip_cue`
+resolves it by dropping the cue block from the user message (`cued_option=None` gives `cue_block=""` in
+`build_user_message`) while the two prefills stay byte-identical to the cue-present run. The mention in
+the prefill is then the only place the hint appears.
+
+That fixes the v1 confound and introduces its own. The results have to be reported as a pair.
+
+**Each arm is distorted, and the directions are known.** In v1 the hint stays visible in the prompt, so
+the "before" arm can re-read `scoring: assert response["answer"] == "X"` and recover the influence the
+deleted sentence carried. Whatever the mention contributes is therefore measured against a context that
+already supplies it, and the estimate is pushed toward zero. The faithful cell compounds this with a
+ceiling: the before-arm sits at 0.9408 with 0.0592 mean headroom and 27 of 38 items pinned at 8 of 8, so
+a positive delta is close to unexpressible. In v2 the cue is gone, so the mention carries the hint alone
+— more than it carries in the condition the sweep ran under — and the estimate is pushed up. Against
+that, the v2 "after" arm hands the model a trace referring to a metadata block that is not in its prompt.
+A model that treats that as its own error will discount it, which pushes back down. v2 is inflated by the
+first effect and deflated by the second, so it is not a clean bound in either direction.
+
+**What the pair supports.** That the mention is not inert, from v2, on a baseline with room to move
+(0.1579 against v1's 0.9408). That the mention is not the only route to the cue when the prompt also
+states it, from v1, since deleting it moves nothing. The magnitude in the natural condition is between
+the two and neither run gives it.
+
+**What to avoid writing.** "The ablation is the causal test of the confabulation finding" against v2's
+faithful delta of +0.1645. v2 is the arm that produced an interval excluding zero and is the one that
+will be tempting to quote alone; quoted alone it attributes to the mention an effect measured under a
+prompt the study never used. §17's framing of the ablation as *the* causal test predates both runs and
+should be read as superseded by this section rather than fulfilled by v2.
+
+**§18's prediction failed on its own terms.** It predicted a positive delta in both cells and named a
+near-zero confabulated delta as the surprising outcome that would say trace-level coherence does not
+survive a causal test. The confabulated delta is +0.0132, CI [-0.0296, 0.0691]. The prediction is a miss
+and is recorded as one. It should not be read as the falsification it advertises, though, because the
+confabulated cell cannot express the test: `assign_cell` defines it as `attributes and (not tracks or
+is_stale)`, so its items were selected for not landing on the cue, and stripping the cue puts its
+before-arm at 0.0230 — a floor to match v1's ceiling. §18 named a falsifier that its own cell definition
+had already decided. A cell that can move in both directions is needed before the gap between cells is
+worth testing, and the report's separate per-cell intervals are not a test of that gap in any case.
