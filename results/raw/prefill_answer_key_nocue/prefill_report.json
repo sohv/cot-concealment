@@ -1,0 +1,89 @@
+{
+  "run_id": "prefill_answer_key_nocue",
+  "git_hash": "3babc795",
+  "generations_paths": [
+    "results/raw/sweep_answer_key/generations.jsonl"
+  ],
+  "judge_dir": "results/raw/judge_answer_key",
+  "arm": "C3_neutral_private",
+  "variants": [
+    "V2",
+    "V3"
+  ],
+  "cue_name": "answer_key",
+  "strip_cue": true,
+  "run": {
+    "model": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "dtype": "bfloat16",
+    "engine": "vllm",
+    "engine_version": "0.8.5.post1",
+    "reasoning_parser": "deepseek_r1",
+    "think_end_token_id": 151668,
+    "max_model_len": 8192,
+    "arms": [
+      "C3_neutral_private",
+      "C0_bare",
+      "C2_monitored"
+    ],
+    "cue_name": "grader_code",
+    "n_samples": 8,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "max_tokens": 6144,
+    "seed": 42
+  },
+  "design": "each trace is regenerated from two prefills, cut just before and just after the sentence carrying the hint mention. the arms differ by that sentence alone, so a difference in the rate of landing on the cued option is the mention rather than the removed context length. the cue block is stripped from the user message, so the mention in the prefill is the only place the hint appears and the contrast isolates what it carries.",
+  "n_items": 84,
+  "n_generations": 1344,
+  "by_cell": {
+    "confabulated": {
+      "n_items": 30,
+      "mean_rate_before": 0.0375,
+      "mean_rate_after": 0.0542,
+      "mean_delta": 0.0167,
+      "delta_ci": [
+        -0.0083,
+        0.0583
+      ],
+      "n_items_delta_positive": 2,
+      "n_items_delta_zero": 27,
+      "mean_prefill_char_gap": 99.7,
+      "tracks_after_prefill": {
+        "n_items": 30,
+        "point": 0.0333,
+        "ci": [
+          0.0,
+          0.1
+        ],
+        "n_resamples": 1000,
+        "seed": 42
+      }
+    },
+    "faithful": {
+      "n_items": 54,
+      "mean_rate_before": 0.1157,
+      "mean_rate_after": 0.2708,
+      "mean_delta": 0.1551,
+      "delta_ci": [
+        0.0972,
+        0.2176
+      ],
+      "n_items_delta_positive": 23,
+      "n_items_delta_zero": 31,
+      "mean_prefill_char_gap": 82.7778,
+      "tracks_after_prefill": {
+        "n_items": 54,
+        "point": 0.2037,
+        "ci": [
+          0.0926,
+          0.3148
+        ],
+        "n_resamples": 1000,
+        "seed": 42
+      }
+    }
+  }
+}

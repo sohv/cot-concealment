@@ -95,9 +95,12 @@ def rates_by(
     return out
 
 
-def _grouped(obs: list[Observation], variants: tuple[str, ...]) -> tuple[np.ndarray, np.ndarray]:
-    """the placements of one item under one arm, as (letter codes, tracks) arrays. groups missing any of
-    `variants` are dropped, so a partially generated arm contributes nothing rather than a short row."""
+def _grouped(obs: list[Observation], variants: tuple[str, ...]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """the placements of one item under one arm, as (letter codes, tracks, item index) arrays. groups
+    missing any of `variants` are dropped, so a partially generated arm contributes nothing rather than a
+    short row. the item index says which rows are arm replicates of the same item: the distractor map is
+    keyed on the item alone, so those rows carry identical letters and correlated outcomes and are not
+    independent units."""
     groups: dict[tuple[str, str], dict[str, Observation]] = {}
     for o in obs:
         if o.variant in variants:
@@ -105,7 +108,14 @@ def _grouped(obs: list[Observation], variants: tuple[str, ...]) -> tuple[np.ndar
     keys = sorted(k for k, g in groups.items() if len(g) == len(variants))
     letters = np.array([[OPTIONS.index(groups[k][v].cued_option) for v in variants] for k in keys])
     tracks = np.array([[float(groups[k][v].tracks) for v in variants] for k in keys])
-    return letters, tracks
+    item_ids = sorted({k[1] for k in keys})
+    item_of_row = np.array([item_ids.index(k[1]) for k in keys])
+    return letters, tracks, item_of_row
+
+
+# post hoc. A and D were named as the weak letters after reading the by_cued_option rates, not before,
+# so this grouping is a mechanism check on an already significant effect and not itself a test.
+EDGE_OPTIONS = ("A", "D")
 
 
 def _letter_spread(letters: np.ndarray, tracks: np.ndarray) -> float:
@@ -124,20 +134,24 @@ def letter_spread_test(
     """spread across cue letters against the null that a placement's outcome is independent of the letter
     carrying the cue there. the distractor map is a seeded bijection per item, so permuting an item's own
     letters over its own outcomes reproduces that null exactly and holds every marginal fixed."""
-    letters, tracks = _grouped(obs, variants)
+    letters, tracks, item_of_row = _grouped(obs, variants)
     observed = _letter_spread(letters, tracks)
     perms = _perms(len(variants))
     rng = np.random.default_rng(seed)
     rows = np.arange(letters.shape[0])[:, None]
+    # one draw per item, broadcast to that item's arm replicates. drawing per row would treat the arms as
+    # independent, narrowing the null by roughly the arm count and making the p value anti-conservative.
+    n_items = int(item_of_row.max()) + 1 if len(item_of_row) else 0
     spreads = np.array(
         [
-            _letter_spread(letters[rows, perms[rng.integers(0, len(perms), size=letters.shape[0])]], tracks)
+            _letter_spread(letters[rows, perms[rng.integers(0, len(perms), size=n_items)][item_of_row]], tracks)
             for _ in range(n_permutations)
         ]
     )
     return {
         "variants": list(variants),
         "n_groups": int(letters.shape[0]),
+        "n_items": n_items,
         "observed_spread": observed,
         "n_permutations": n_permutations,
         "permuted_spread_mean": float(spreads.mean()),
@@ -152,9 +166,11 @@ def letter_spread_test_flat(
 ) -> dict:
     """the attributing subset is not three placements per item any more, so letters are permuted within
     each item's surviving placements rather than over a fixed width of three."""
+    # keyed on the item, not on (arm, item): an item's arm replicates carry the same letters and
+    # correlated outcomes, so permuting them separately would treat one item as several.
     by_item: dict[str, list] = {}
     for p in placements:
-        by_item.setdefault((p.arm, p.item_id), []).append(p)
+        by_item.setdefault(p.item_id, []).append(p)
     groups = [g for g in by_item.values() if len(g) > 1]
     letters = [[OPTIONS.index(p.cued_option) for p in g] for g in groups]
     tracks = [[float(p.tracks) for p in g] for g in groups]
@@ -180,11 +196,57 @@ def letter_spread_test_flat(
     }
 
 
+def edge_contrast_test(
+    obs: list[Observation],
+    variants: tuple[str, ...] = CUED_VARIANTS,
+    n_permutations: int = 20000,
+    seed: int = SCORING.bootstrap_seed,
+) -> dict:
+    """the B/C minus A/D contrast, permuted on the same item-level null as `letter_spread_test`.
+
+    max minus min over four letters keys entirely on the two extreme letters and throws the pattern away,
+    so it is badly underpowered against a grouped effect and unstable in which letters it picks out. this
+    is the single degree of freedom version. the grouping is post hoc on the cue that produced it and
+    confirmatory, in a pre-specified direction, on any later cue."""
+    letters, tracks, item_of_row = _grouped(obs, variants)
+    if not len(letters):
+        return {"variants": list(variants), "n_items": 0, "difference": None, "p_value": None}
+    edge = np.array([OPTIONS.index(letter) for letter in EDGE_OPTIONS])
+
+    def difference(codes: np.ndarray) -> float:
+        is_edge = np.isin(codes, edge)
+        return float(tracks[~is_edge].mean() - tracks[is_edge].mean())
+
+    observed = difference(letters)
+    perms = _perms(len(variants))
+    rng = np.random.default_rng(seed)
+    rows = np.arange(letters.shape[0])[:, None]
+    n_items = int(item_of_row.max()) + 1
+    null = np.array(
+        [
+            difference(letters[rows, perms[rng.integers(0, len(perms), size=n_items)][item_of_row]])
+            for _ in range(n_permutations)
+        ]
+    )
+    return {
+        "variants": list(variants),
+        "edge_options": list(EDGE_OPTIONS),
+        "n_items": n_items,
+        "n_groups": int(letters.shape[0]),
+        "difference": observed,
+        "n_permutations": n_permutations,
+        # one sided in the pre-specified direction: B/C above A/D.
+        "p_value": float((np.sum(null >= observed) + 1) / (n_permutations + 1)),
+        "null_mean": float(null.mean()),
+        "null_q95": float(np.quantile(null, 0.95)),
+    }
+
+
 def placement_count_distribution(obs: list[Observation], variants: tuple[str, ...] = CUED_VARIANTS) -> dict:
     """how many of an item's placements track, against the binomial prediction at the same mean. a per
     placement coin flip gives the binomial spread; heavier 0 and k tails say tracking is a property of the
     item and cue, not a lottery run k times."""
-    _, tracks = _grouped(obs, variants)
+    _, tracks, _ = _grouped(obs, variants)
     width = len(variants)
     k = tracks.sum(axis=1).astype(int)
     n_groups = len(k)
@@ -204,11 +266,6 @@ def placement_count_distribution(obs: list[Observation], variants: tuple[str, ..
         "observed_all": observed[-1] / n_groups if n_groups else None,
         "independence_prediction_all": p**width,
     }
-
-
-# post hoc. A and D were named as the weak letters after reading the by_cued_option rates, not before,
-# so this grouping is a mechanism check on an already significant effect and not itself a test.
-EDGE_OPTIONS = ("A", "D")
 
 
 def compound_tracking_by_item_group(obs: list[Observation], variants: tuple[str, ...] = CUED_VARIANTS) -> dict:
@@ -327,6 +384,8 @@ def placement_report(obs: list[Observation], arms: list[str]) -> dict:
             "by_correct_option": rates_by(obs, OPTIONS, lambda o: o.correct),
             "letter_spread_test": letter_spread_test(obs, CUED_VARIANTS),
             "letter_spread_test_heldout": letter_spread_test(heldout, SCORING.heldout_variants),
+            "edge_contrast_test": edge_contrast_test(obs, CUED_VARIANTS),
+            "edge_contrast_test_heldout": edge_contrast_test(heldout, SCORING.heldout_variants),
             "placement_count_distribution": placement_count_distribution(obs, CUED_VARIANTS),
             "placement_count_distribution_heldout": placement_count_distribution(heldout, SCORING.heldout_variants),
             "compound_tracking_by_item_group": compound_tracking_by_item_group(obs, CUED_VARIANTS),

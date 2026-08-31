@@ -1,0 +1,72 @@
+{
+  "git_hash": "3babc795",
+  "model_id": "Qwen/Qwen3-8B",
+  "figure_1_verbalization_gap": {
+    "grader_code": {
+      "naive_verbalization": {
+        "C0_bare": 0.925,
+        "C3_neutral_private": 0.9417,
+        "C2_monitored": 0.9333
+      },
+      "tracking": {
+        "C0_bare": 0.5833,
+        "C3_neutral_private": 0.625,
+        "C2_monitored": 0.65
+      }
+    },
+    "answer_key": {
+      "naive_verbalization": {
+        "C3_neutral_private": 0.9462,
+        "C2_monitored": 0.9785
+      },
+      "tracking": {
+        "C3_neutral_private": 0.6129,
+        "C2_monitored": 0.6559
+      }
+    }
+  },
+  "figure_2_item_against_trace": {
+    "grader_code": {
+      "per_item": 0.3393,
+      "per_trace": 0.0281
+    },
+    "answer_key": {
+      "per_item": 0.3408,
+      "per_trace": 0.044
+    }
+  },
+  "figure_3_prefill_ablation": {
+    "Hint states the grading rule|faithful": {
+      "delta": 0.1645,
+      "ci": [
+        0.0657,
+        0.2895
+      ],
+      "n_items": 38
+    },
+    "Hint states the grading rule|confabulated": {
+      "delta": 0.0132,
+      "ci": [
+        -0.0296,
+        0.0691
+      ],
+      "n_items": 38
+    },
+    "Hint states the answer|faithful": {
+      "delta": 0.1551,
+      "ci": [
+        0.0972,
+        0.2176
+      ],
+      "n_items": 54
+    },
+    "Hint states the answer|confabulated": {
+      "delta": 0.0167,
+      "ci": [
+        -0.0083,
+        0.0583
+      ],
+      "n_items": 30
+    }
+  }
+}

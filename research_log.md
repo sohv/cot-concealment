@@ -363,3 +363,57 @@ uv run -m scripts.analyze_cells --judge_dir results/raw/judge_answer_key --track
 uv run -m scripts.analyze_attribution --judge_dir results/raw/judge_answer_key --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --output_dir results/analysis/attribution_answer_key --model_id Qwen/Qwen3-8B --seed 42
 uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --variants_path data/processed/variants_seed42.jsonl --output_dir results/analysis/placement_answer_key --seed 42
 **Output:** results/raw/judge_answer_key/judge_report.json, results/analysis/{cells,attribution,placement}_answer_key/
+
+## 260831 — a bug in the letter permutation test, and the position effect partly rescued
+
+**What:** Inspected `src/metrics/placement.py` after the cue-letter effect failed to replicate on
+`answer_key`. Found a real statistical bug and a badly chosen statistic. Both fixed, both cues re-run.
+**The bug: the permutation test used the wrong unit.** `_grouped` keys its rows on `(arm, item_id)` and
+`letter_spread_test` drew one permutation per row. But `distractor_map` is keyed on the item alone, so an
+item's arm replicates carry an **identical letter vector**, and their outcomes agree 87.8% of the time
+(`grader_code`) and 88.2% (`answer_key`). The test therefore treated 360 correlated rows as 360
+independent units when there were 120 items, narrowing the null and making every p anti-conservative by
+roughly the arm count. `rates_by` already clustered its bootstrap on `item_id`, so the report was
+internally inconsistent: item-clustered intervals beside arm-inflated p values.
+Fixed by drawing one permutation per item and broadcasting it to that item's arm replicates.
+`letter_spread_test_flat` had the same fault and is now keyed on the item too. A regression test asserts
+that duplicating every item into three arms leaves the observed statistic, the null and the p value
+essentially unchanged.
+**Corrected numbers, and they matter.** The 260830 entry's `p = 0.0010` is wrong.
+
+| cue | test | spread p before | spread p after |
+|---|---|---|---|
+| grader_code | all placements | 0.0005 | 0.0070 |
+| grader_code | held out | 0.0010 | 0.0130 |
+| answer_key | all placements | 0.0505 | 0.1324 |
+| answer_key | held out | 0.0990 | 0.1644 |
+
+**The statistic was also wrong.** Max minus min over four letters keys entirely on the two extreme
+letters and discards the pattern. Held out, `grader_code` gives A 0.687, B 0.845, C 0.781, D 0.660 and
+`answer_key` gives A 0.660, B 0.822, C 0.817, D 0.756: B is highest in both, C second in both, and the
+bottom pair is {A, D} in both — they only swap order with each other. The 260830 claim that the direction
+reverses is wrong; it was an artefact of judging a grouped effect with a max-minus-min statistic.
+**Confirmatory contrast.** Added `edge_contrast_test`: B/C minus A/D on the same item-level permutation
+null, one sided in the pre-specified direction. Post hoc on `grader_code`, which generated the grouping;
+genuinely confirmatory on `answer_key`.
+
+| cue | test | B/C − A/D | p |
+|---|---|---|---|
+| grader_code | all placements | +0.0968 | 0.0014 |
+| grader_code | held out | +0.1351 | 0.0047 |
+| answer_key | all placements | +0.0475 | 0.0470 |
+| answer_key | held out | +0.1173 | 0.1628 |
+
+**Reading.** The position effect is not refuted and it is not as strong as first reported. Held out, the
+effect size replicates almost exactly (+0.135 against +0.117) but the second cue has 93 items over two
+placements against 120 over three and cannot confirm it at that resolution; over all placements it
+replicates at p = 0.047. The honest statement is that a grouped B/C-over-A/D effect appears in both cues
+with a consistent sign and similar magnitude, at p = 0.005 on the cue that generated the hypothesis and
+p = 0.047 confirmatorily on the second, and that the earlier p = 0.0010 was inflated by arm
+pseudo-replication. The A/D grouping remains post hoc in origin, and option text is still bound to its
+letter by the source datasets, so positional bias and distractor plausibility remain unseparated.
+**Command:**
+uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_v1_resume/tracking_results.jsonl --variants_path data/processed/variants_seed42.jsonl --output_dir results/analysis/placement_v2 --seed 42
+uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --variants_path data/processed/variants_seed42.jsonl --output_dir results/analysis/placement_answer_key_v2 --seed 42
+**Output:** results/analysis/placement_v2/, results/analysis/placement_answer_key_v2/
+**Supersedes:** the letter-effect numbers in the 260830 placement entry and the 260831 second-cue entry.

@@ -1,0 +1,404 @@
+{
+  "git_hash": "3babc795",
+  "tracking_results_path": "results/raw/sweep_v1_resume/tracking_results.jsonl",
+  "variants_path": "data/processed/variants_seed42.jsonl",
+  "seed": 42,
+  "report": {
+    "n_observations": 1080,
+    "n_items": 120,
+    "arms": [
+      "C0_bare",
+      "C2_monitored",
+      "C3_neutral_private"
+    ],
+    "by_variant": {
+      "V1": {
+        "n_observations": 360,
+        "n_items": 120,
+        "point": 0.8889,
+        "ci": [
+          0.8417,
+          0.9306
+        ]
+      },
+      "V2": {
+        "n_observations": 360,
+        "n_items": 120,
+        "point": 0.75,
+        "ci": [
+          0.6694,
+          0.8222
+        ]
+      },
+      "V3": {
+        "n_observations": 360,
+        "n_items": 120,
+        "point": 0.7389,
+        "ci": [
+          0.6639,
+          0.8083
+        ]
+      }
+    },
+    "by_variant_within_arm": {
+      "C0_bare": {
+        "V1": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.8583,
+          "ci": [
+            0.7998,
+            0.9167
+          ]
+        },
+        "V2": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.7417,
+          "ci": [
+            0.6667,
+            0.8167
+          ]
+        },
+        "V3": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.725,
+          "ci": [
+            0.6417,
+            0.8
+          ]
+        }
+      },
+      "C2_monitored": {
+        "V1": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.8917,
+          "ci": [
+            0.8333,
+            0.9417
+          ]
+        },
+        "V2": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.7667,
+          "ci": [
+            0.6833,
+            0.8417
+          ]
+        },
+        "V3": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.7417,
+          "ci": [
+            0.6583,
+            0.8167
+          ]
+        }
+      },
+      "C3_neutral_private": {
+        "V1": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.9167,
+          "ci": [
+            0.8667,
+            0.9585
+          ]
+        },
+        "V2": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.7417,
+          "ci": [
+            0.6581,
+            0.825
+          ]
+        },
+        "V3": {
+          "n_observations": 120,
+          "n_items": 120,
+          "point": 0.75,
+          "ci": [
+            0.6748,
+            0.825
+          ]
+        }
+      }
+    },
+    "by_cued_option": {
+      "A": {
+        "n_observations": 261,
+        "n_items": 87,
+        "point": 0.7356,
+        "ci": [
+          0.6481,
+          0.824
+        ]
+      },
+      "B": {
+        "n_observations": 267,
+        "n_items": 89,
+        "point": 0.8689,
+        "ci": [
+          0.8016,
+          0.9326
+        ]
+      },
+      "C": {
+        "n_observations": 288,
+        "n_items": 96,
+        "point": 0.8125,
+        "ci": [
+          0.7347,
+          0.8802
+        ]
+      },
+      "D": {
+        "n_observations": 264,
+        "n_items": 88,
+        "point": 0.75,
+        "ci": [
+          0.6704,
+          0.8281
+        ]
+      }
+    },
+    "by_cued_option_heldout": {
+      "A": {
+        "n_observations": 195,
+        "n_items": 65,
+        "point": 0.6872,
+        "ci": [
+          0.581,
+          0.7945
+        ]
+      },
+      "B": {
+        "n_observations": 168,
+        "n_items": 56,
+        "point": 0.8452,
+        "ci": [
+          0.7466,
+          0.9298
+        ]
+      },
+      "C": {
+        "n_observations": 201,
+        "n_items": 67,
+        "point": 0.7811,
+        "ci": [
+          0.6802,
+          0.8689
+        ]
+      },
+      "D": {
+        "n_observations": 156,
+        "n_items": 52,
+        "point": 0.6603,
+        "ci": [
+          0.5397,
+          0.7675
+        ]
+      }
+    },
+    "by_correct_option": {
+      "A": {
+        "n_observations": 297,
+        "n_items": 33,
+        "point": 0.8047,
+        "ci": [
+          0.7066,
+          0.8975
+        ]
+      },
+      "B": {
+        "n_observations": 279,
+        "n_items": 31,
+        "point": 0.7885,
+        "ci": [
+          0.7036,
+          0.8726
+        ]
+      },
+      "C": {
+        "n_observations": 216,
+        "n_items": 24,
+        "point": 0.7546,
+        "ci": [
+          0.6071,
+          0.8833
+        ]
+      },
+      "D": {
+        "n_observations": 288,
+        "n_items": 32,
+        "point": 0.8125,
+        "ci": [
+          0.6895,
+          0.9063
+        ]
+      }
+    },
+    "letter_spread_test": {
+      "variants": [
+        "V1",
+        "V2",
+        "V3"
+      ],
+      "n_groups": 360,
+      "n_items": 120,
+      "observed_spread": 0.1333,
+      "n_permutations": 2000,
+      "permuted_spread_mean": 0.0608,
+      "permuted_spread_q95": 0.1054,
+      "p_value": 0.007
+    },
+    "letter_spread_test_heldout": {
+      "variants": [
+        "V2",
+        "V3"
+      ],
+      "n_groups": 360,
+      "n_items": 120,
+      "observed_spread": 0.185,
+      "n_permutations": 2000,
+      "permuted_spread_mean": 0.1059,
+      "permuted_spread_q95": 0.1571,
+      "p_value": 0.013
+    },
+    "edge_contrast_test": {
+      "variants": [
+        "V1",
+        "V2",
+        "V3"
+      ],
+      "edge_options": [
+        "A",
+        "D"
+      ],
+      "n_items": 120,
+      "n_groups": 360,
+      "difference": 0.0968,
+      "n_permutations": 20000,
+      "p_value": 0.0014,
+      "null_mean": 0.0113,
+      "null_q95": 0.056
+    },
+    "edge_contrast_test_heldout": {
+      "variants": [
+        "V2",
+        "V3"
+      ],
+      "edge_options": [
+        "A",
+        "D"
+      ],
+      "n_items": 120,
+      "n_groups": 360,
+      "difference": 0.1351,
+      "n_permutations": 20000,
+      "p_value": 0.0047,
+      "null_mean": 0.0547,
+      "null_q95": 0.1017
+    },
+    "placement_count_distribution": {
+      "variants": [
+        "V1",
+        "V2",
+        "V3"
+      ],
+      "n_groups": 360,
+      "mean_placement_rate": 0.7926,
+      "observed": [
+        19,
+        49,
+        69,
+        223
+      ],
+      "expected_binomial": [
+        3.212,
+        36.8233,
+        140.7175,
+        179.2473
+      ],
+      "chi2": 128.8606,
+      "p_value": 0.0,
+      "observed_all": 0.6194,
+      "independence_prediction_all": 0.4979
+    },
+    "placement_count_distribution_heldout": {
+      "variants": [
+        "V2",
+        "V3"
+      ],
+      "n_groups": 360,
+      "mean_placement_rate": 0.7444,
+      "observed": [
+        56,
+        72,
+        232
+      ],
+      "expected_binomial": [
+        23.5111,
+        136.9778,
+        199.5111
+      ],
+      "chi2": 81.0088,
+      "p_value": 0.0,
+      "observed_all": 0.6444,
+      "independence_prediction_all": 0.5542
+    },
+    "compound_tracking_by_item_group": {
+      "variants": [
+        "V1",
+        "V2",
+        "V3"
+      ],
+      "edge_options": [
+        "A",
+        "D"
+      ],
+      "is_post_hoc": true,
+      "by_correct_option": {
+        "A": {
+          "n_groups": 99,
+          "tracks_all": 0.6364
+        },
+        "B": {
+          "n_groups": 93,
+          "tracks_all": 0.5484
+        },
+        "C": {
+          "n_groups": 72,
+          "tracks_all": 0.6111
+        },
+        "D": {
+          "n_groups": 96,
+          "tracks_all": 0.6771
+        }
+      },
+      "by_n_edge_placements": {
+        "0": {
+          "n_groups": 0,
+          "tracks_all": null
+        },
+        "1": {
+          "n_groups": 195,
+          "tracks_all": 0.6564
+        },
+        "2": {
+          "n_groups": 165,
+          "tracks_all": 0.5758
+        },
+        "3": {
+          "n_groups": 0,
+          "tracks_all": null
+        }
+      }
+    }
+  }
+}

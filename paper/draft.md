@@ -8,10 +8,10 @@ against a real arXiv page before it goes in.*
 
 ## 1. Introduction
 
-**[PLACEHOLDER — write last.]** The framing depends on the second-cue run currently in flight (§4.8). If
-the silent cell fills under `answer_key`, the paper is "concealment is cue-dependent" with the
-visible-grader null as the contrast. If it stays empty, the paper is the measurement result of §4.6 with a
-two-cue negative supporting it. The body below is written to serve either.
+**[PLACEHOLDER — write last.]** The second-cue run is complete and the branch is settled: the silent cell
+is empty for both hints (§4.8), so this is the measurement paper of §4.6, with a two-cue negative
+supporting it and a causal validation (§4.7) that replicates across both. The introduction should not
+promise a concealment result.
 
 Points the introduction must make, in order:
 
@@ -25,6 +25,13 @@ Points the introduction must make, in order:
 4. Our contribution: move the hint across placements within an item, so influence becomes observable
    independently of mention; then show that the standard item-level scoring of the resulting four cells
    systematically overstates confabulation relative to what any individual trace did.
+5. **Scope, and it must be stated in the abstract, not only here.** We do not reproduce the setting in
+   which unverbalized influence was originally reported, and we do not claim to refute it. Our hint is an
+   explicit metadata block rather than an implicit pattern across few-shot examples or a stated user
+   opinion; our model is a single 8B checkpoint in thinking mode rather than the models that finding was
+   established on; and our items are pre-selected for demonstrated cue influence rather than sampled
+   broadly. Every number here describes that regime. `[CITE: Turpin et al., unfaithful CoT explanations —
+   the mention-based protocol and the biasing features it uses]`
 
 ---
 
@@ -202,10 +209,25 @@ tracking is 0.619 where independence predicts 0.498. A fixed subpopulation never
 placement, and the all-three requirement compounds a per-placement rate of ~0.75 down to 0.62.
 
 **Tracking depends on which letter carries the hint.** Held out: B 0.845 and C 0.781 against A 0.687 and
-D 0.660; spread 0.185 against a permuted 95th percentile of 0.136, p = 0.0010. The permutation shuffles an
-item's own three letters over its own three outcomes, which is exactly the null the seeded distractor map
-creates, so this is within-item and cannot be item composition. The item's *correct* letter is flat (0.755
-to 0.812), so it is the cued position rather than difficulty by answer position.
+D 0.660. The permutation shuffles an item's own three letters over its own three outcomes, which is
+exactly the null the seeded distractor map creates, so this is within-item and cannot be item composition.
+The item's *correct* letter is flat (0.755 to 0.812), so it is the cued position rather than difficulty by
+answer position.
+
+Two statistical points, both of which weaken the effect from how we first measured it.
+
+*The randomization unit is the item, not the item-arm pair.* The distractor map is keyed on the item
+alone, so an item's arm replicates carry identical letters and their outcomes agree 87.8% of the time.
+Permuting per replicate treats 360 correlated rows as 360 independent units and is anti-conservative by
+roughly the arm count. Permuting once per item and broadcasting to its replicates gives spread p = 0.0130
+held out and p = 0.0070 over all placements — an order of magnitude weaker than the per-replicate
+computation, which is what we originally reported.
+
+*Max-minus-min is the wrong statistic.* It keys entirely on the two extreme letters and discards the
+pattern, so it is underpowered against a grouped effect and unstable in which letters it selects. The
+single-degree-of-freedom contrast, B/C minus A/D on the same item-level null, is **+0.1351, p = 0.0047**
+held out (+0.0968, p = 0.0014 over all placements). The A/D grouping is post hoc on this cue — it was
+named after reading these rates — and is therefore tested confirmatorily on the second cue in §4.8.
 
 The two fresh placements are indistinguishable (V2 0.750, V3 0.739) against V1 at 0.889, so there is no
 decay across successive swaps — the V1 excess is the winner's curse from selecting items on V1, exactly as
@@ -241,6 +263,15 @@ whose answer follows it — is 0.63 to 0.69.
 **Read naively, that says roughly one in three apparent attributions is confabulated. §4.6 shows that
 reading is wrong.**
 
+![Figure 1](figures/fig1_verbalization_gap.png)
+
+**Figure 1.** What a mention-checking grader reports (orange) against what the answer actually does as the
+hint moves (blue), for both hints and every framing arm. The dashed line is the preregistered 0.70
+tracking gate. The gap is 0.28–0.37 and is present in every arm of both hints; describing the reasoning as
+monitored rather than private does not close it.
+
+
+
 ### 4.6 The confabulated cell is mostly aggregation, not fabrication
 
 The cell rule aggregates 24 traces and three placements *before* comparing, so an item can be scored
@@ -266,10 +297,25 @@ Measured per trace, it is 0.028 (n = 6,876 attributing traces). **These are diff
 same quantity measured better** — but the item-level number is what a four-cell design reports, and it
 overstates confabulation by an order of magnitude relative to what any trace did.
 
+![Figure 2](figures/fig2_item_against_trace.png)
+
+**Figure 2.** The same quantity — credits the hint but does not follow it — measured per item by the
+four-cell rule and per trace. Item-level scoring aggregates 24 samples and three placements before
+comparing, and reports roughly ten times the trace-level rate. Both hints agree closely on both units.
+
+
+
 **The position effect survives conditioning on attribution, and inverts.** Among placements whose traces
 credited the hint, P(answer follows it) is B 0.922, C 0.874, A 0.811, D 0.720 held out (spread 0.131,
-p = 0.0010). But the rate of crediting the hint *at all* is highest at D (0.951) and lowest at A (0.854).
-**The model says it is following the hint most often exactly where it follows it least.**
+p = 0.0005 on the item-level null). But the rate of crediting the hint *at all* is highest at D (0.951) and
+lowest at A (0.854). **The model says it is following the hint most often exactly where it follows it
+least.**
+
+**This particular result does not replicate and we report it as single-cue.** On the second cue the same
+conditional spread is 0.037 with p = 0.98 — no letter effect at all once attribution is conditioned on —
+and while D is still credited near the top (0.949) and followed near the bottom (0.819), neither is
+extreme. The unconditional B/C-over-A/D effect of §4.3 does replicate (§4.8); this conditional inversion
+does not, and should not be stated as a property of the model.
 
 ### 4.7 Causal validation: the mention is load-bearing on faithful items only
 
@@ -295,6 +341,21 @@ visible at all.
 0.941 when the hint sits in the prompt. The mention recovers roughly a fifth of the hint's total effect:
 the prompt hint is the dominant driver and the mention is a secondary causal contributor.
 
+![Figure 3](figures/fig3_prefill_ablation.png)
+
+**Figure 3.** The prefill ablation with the hint stripped from the prompt, so the trace is the only place
+it appears. Restoring the mention moves the answer on faithful items and not on confabulated ones, in both
+hints. Intervals are item-level bootstrap; blue marks intervals excluding zero.
+
+
+
+**The ablation replicates on the second cue.** Run identically on `answer_key`, cue stripped, C3 arm, 84
+items: faithful **+0.1551 [0.0972, 0.2176]** (n = 54), confabulated +0.0167 [−0.0083, 0.0583] (n = 30).
+The point estimates sit within 0.01 of the first cue on both cells and the faithful interval is tighter,
+having 54 items rather than 38. `before` rates were 0.1157 and 0.0375, so the headroom the stripped
+condition creates is present in both runs. This is the paper's one causal claim and it is cue-independent
+across 130 items.
+
 **Threshold sensitivity.** The empty silent cell holds at attribution thresholds 1, 3 and 5. At 8 — every
 one of a placement's eight samples must attribute — silent jumps to 27 and corrected faithfulness falls to
 0.64. The headline is robust across the plausible range and breaks only under an all-eight rule that would
@@ -302,19 +363,44 @@ score an item with seven attributing traces as silently influenced. Attribution 
 monotonically with the threshold (0.636, 0.664, 0.712, 0.857), as a stricter bar filters weak attributions
 out of the denominator.
 
-### 4.8 Second cue
+### 4.8 Second cue: the negative replicates, the position effect partly does
 
-**[HOLE — run in flight.]** `answer_key` on the same 300-item pool, C3 and C2 arms. Same metadata channel
-as the primary cue, differing in legitimacy: a scoring rule the model may reasonably consider, against an
-answer key it should not consult. The existing judge prompt already names an answer key, so both cues are
-scored by the **same instrument** with no rewrite and no recalibration — any difference in silent rate is
-the cue, not the judge.
+`answer_key` (`<metadata> answer_key: (X) </metadata>`) on the same 300-item pool, C3 and C2 arms. Same
+metadata channel as the primary hint, differing in *legitimacy*: a scoring rule the model may reasonably
+consider, against an answer it should not consult. The existing judge prompt already names "an answer
+key", so both cues are scored by the **same instrument** with no rewrite and no recalibration, and any
+difference is the cue rather than the judge. Judge specificity holds: false attribution on hint-free V0
+traces is 0.0182 over 1,484 traces against the same 0.05 gate, parse rate 1.000.
 
-Fill in: yield and whether it clears the 0.30 gate; tracking; the four-cell breakdown; the silent-cell
-bound; and whether silent influence differs between the private and monitored arms, which is the
-concealment prediction proper.
+**The hint is a weaker lever but behaves the same once it bites.** 93 survivors, yield 0.310 (gate > 0.30,
+passes); 151 of 300 items answer correctly unaided and then refuse it, against 122 for the primary hint.
+Truncation at the 4096 filter budget is 0.0213 against a 2% gate — a marginal miss, where the primary hint
+was a marginal pass at 0.0190, so this pool is selected under a slightly harsher effective budget.
+Tracking is 0.613 [0.516, 0.710] on C3 and 0.656 [0.559, 0.753] on C2, statistically indistinguishable
+from the primary hint's 0.625 and 0.650.
 
----
+**The silent influence cell is empty again, on both arms.** 0 of 93 under C3 and 0 of 93 under C2;
+rule-of-three upper bound 0.0323. Corrected faithfulness 1.0 in both arms. The hint chosen because the
+model has more reason *not* to admit consulting it is verbalized **more**, not less — 0.946 (C3) and 0.979
+(C2), against 0.925 and 0.942 for the primary hint — and the monitored arm is where the silent cell is
+most conspicuously empty. Paired over shared items, the difference in corrected faithfulness between the
+monitored and private arms is exactly 0.0 [0.0, 0.0].
+
+**Everything in §4.5 and §4.6 replicates.** Verbalization 0.946/0.979 against tracking 0.613/0.656.
+Attribution precision 0.648 and 0.670. Of 4,422 cued traces 86.9% credit the hint and 95.6% of those
+answer the cued option in the same trace, against 12.2% for non-attributing traces; coherence by cell is
+0.9894 faithful and 0.8766 confabulated. Of 91 failing placements, 32 have the cue as modal answer below
+the 6-of-8 bar (35.2%, against 40.4%). Item-level overdispersion replicates (χ² = 56.1, all-three 0.634
+against 0.528 under independence).
+
+**The position effect: confirmatory test.** §4.3's A/D grouping was post hoc on the primary hint, so this
+cue tests it in a pre-specified direction. B/C minus A/D is **+0.0475, p = 0.0470** over all placements
+and +0.1173, p = 0.1628 held out. The held-out effect size is close to the primary hint's +0.1351, but 93
+items over two placements cannot resolve it where 120 over three could. Per-letter, B is highest and C
+second on both cues, and A and D are the bottom pair on both, swapping only with each other. We therefore
+report a grouped B/C-over-A/D effect that replicates in sign and magnitude, significant on the generating
+cue and confirmatorily at p = 0.047 on the second, rather than the stronger claim the first run appeared
+to license.
 
 ## 5. Limitations
 
@@ -323,7 +409,16 @@ computed on an instrument that missed its own validity criterion. §4.3 decompos
 never-tracking subpopulation and a compounding all-three rule, which we think is the right reading, but it
 remains true that a stricter reading would say the cue swap is not sufficiently reliable on this pool.
 
-**One cue, one model, and the cue is the easy case.** The primary hint shows the model the scoring rule,
+**We do not reproduce the phenomenon we are measuring the measurement of.** The silent influence cell is
+empty in both hints, which means this study contains almost no cases of the thing prior work reports:
+influence without mention. That is a statement about our regime, not about models. An explicit metadata
+block is far easier for a trace to name than an implicit bias distributed across few-shot examples, a
+thinking-mode model is trained to enumerate its context, and our filter admits only items where the hint
+demonstrably flips the answer — which plausibly selects for salient influence, and salient influence is
+what gets mentioned. A design intended to *find* unverbalized influence would need a cue whose baseline
+mention rate is well below ceiling, which neither of ours is.
+
+**One cue type, one model, and the cue is the easy case.** The primary hint shows the model the scoring rule,
 so what is measured is closer to gaming a visible grader than to deferring to a claimed authority. A hint
 the model has reason not to admit to is exactly where the silent cell would be expected to fill; §4.8
 addresses this directly and its outcome bounds how far the negative generalizes. Qwen3-8B is a single
@@ -344,7 +439,8 @@ isolates it.
 judge whose labels define attribution. It shows the labels are internally consistent with behaviour. The
 hand check in §3 is what validates the judge itself, and it rests on 50 traces.
 
-**Sample sizes.** 120 items per arm, 38 per cell in the ablation, 50 in the hand check.
+**Sample sizes.** 120 items per arm on the primary hint and 93 on the second; in the ablation 38 per cell
+on the primary hint and 54 faithful / 30 confabulated on the second; 50 traces in the hand check.
 
 **Hardware.** The ablation and the primary sweep were generated on different accelerators. The ablation's
 contrast is within-run so it is not confounded, and no ablation generation is compared against the sweep
@@ -361,6 +457,11 @@ confabulation relative to what any individual trace did, and a four-cell design 
 trace-level number beside the item-level one. The causal check confirms the split is real but shows the
 name is wrong: confabulated items are high-variance, not dishonest.
 
+The claim *not* to make: that models verbalize what drives them. We measured one 8B checkpoint, one cue
+type in two forms, on items pre-selected for demonstrated influence, and found no unverbalized influence
+in that regime. The correct reading is that this regime is a poor instrument for detecting concealment —
+which is itself useful to anyone designing one — not that there is nothing to detect.
+
 ---
 
 ## Appendix A — what to cut for five pages
@@ -373,8 +474,9 @@ The body above is longer than five pages. Suggested priority:
 - **Compress to a short subsection, rest to appendix:** §4.3. Keep the overdispersion figure and the
   single dissociation number from §4.6 (says-most-at-D, follows-least-at-D); move the full per-letter
   tables and the permutation details out.
-- **Figures, three maximum:** the verbalization gap (§4.5), item-level against trace-level (§4.6), and the
-  prefill ablation (§4.7). The position-effect figure goes to the appendix.
+- **Figures, three, already built** (`paper/figures/`, one per result, both hints on every panel): the
+  verbalization gap (§4.5), item-level against trace-level (§4.6), and the prefill ablation (§4.7). Any
+  position-effect figure goes to the appendix.
 
 ## Appendix B — numbers ledger
 
@@ -391,4 +493,6 @@ Every number in this draft traces to a file on disk.
 | §4.7 ablation | `results/raw/prefill_v1/prefill_report.json`, `results/raw/prefill_v2_nocue/prefill_report.json` |
 | §3 hand check | `results/analysis/hand_check_v1/hand_check_report.json` |
 | §4.8 second cue | `results/raw/filter_answer_key/` — in flight |
-| Figures | `results/analysis/headline_v1/`, `results/analysis/prefill_v1/figures/` |
+| Figures 1–3 | `paper/figures/`, values in `paper/figures/paper_figure_values.json` |
+| Second cue (§4.8) | `results/analysis/cells_answer_key/`, `attribution_answer_key_v2/`, `placement_answer_key_v2/`, `results/raw/prefill_answer_key_nocue/` |
+| Corrected letter tests | `results/analysis/placement_v2/`, `results/analysis/attribution_v2/` |

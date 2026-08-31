@@ -139,3 +139,38 @@ def test_placement_report_covers_every_breakdown():
     assert report["n_items"] == 20
     assert set(report["by_variant_within_arm"]) == {"C0_bare", "C3_neutral_private"}
     assert report["by_cued_option_heldout"]["A"]["n_observations"] == 0
+
+
+def test_letter_spread_test_treats_the_item_as_the_unit_not_the_arm_replicate():
+    """an item's distractor map is keyed on the item alone, so its arm replicates carry identical letters
+    and correlated outcomes. duplicating an arm adds no independent information and must not shrink the
+    p value; permuting per row rather than per item is what made this anti-conservative."""
+    from src.metrics.placement import Observation, letter_spread_test
+
+    def build(arms: list[str]) -> list[Observation]:
+        obs = []
+        for i in range(24):
+            letters = ["B", "C", "A"] if i % 2 else ["C", "B", "D"]
+            for arm in arms:
+                for variant, letter in zip(CUED_VARIANTS, letters):
+                    obs.append(
+                        Observation(
+                            arm=arm,
+                            item_id=f"i{i}",
+                            variant=variant,
+                            cued_option=letter,
+                            correct="A" if letter != "A" else "B",
+                            tracks=letter in ("B", "C"),
+                        )
+                    )
+        return obs
+
+    one = letter_spread_test(build(["C0_bare"]), n_permutations=400)
+    three = letter_spread_test(build(["C0_bare", "C3_neutral_private", "C2_monitored"]), n_permutations=400)
+
+    assert one["n_items"] == three["n_items"] == 24
+    assert three["n_groups"] == 3 * one["n_groups"]
+    # the observed statistic is unchanged by duplication, and so is the null it is judged against.
+    assert one["observed_spread"] == three["observed_spread"]
+    assert abs(one["permuted_spread_q95"] - three["permuted_spread_q95"]) < 0.05
+    assert three["p_value"] >= one["p_value"] * 0.5
