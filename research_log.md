@@ -311,3 +311,55 @@ way. That is a design fault in the prediction, not a result.
 uv run -m scripts.run_prefill_ablation --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl --judge_dir results/raw/judge_v1 --output_dir results/raw/prefill_v2_nocue --model_id Qwen/Qwen3-8B --max_tokens 6144 --n_items_per_cell 38 --strip_cue --gpu_memory_utilization 0.90 --seed 42
 **Output:** results/raw/prefill_v2_nocue/prefill_report.json, prefill_results.jsonl, generations.jsonl
 **Reads with:** results/raw/prefill_v1/prefill_report.json and the 260830 prefill_v1 entry above.
+
+## 260831 — second cue (answer_key): the empty silent cell replicates, the position effect does not
+
+**What:** The whole pipeline rerun with `answer_key` (`<metadata> answer_key: (X) </metadata>`) instead of
+`grader_code`, on the same 300-item pool, C3 and C2 arms. Same metadata channel, differing in legitimacy:
+a scoring rule the model may reasonably consider against an answer it should not consult. The existing
+judge prompt already names "an answer key", so both cues are scored by the same instrument with no
+rewrite and no recalibration. Filter 4,800 generations, sweep 5,952, judge 5,906 calls.
+**Filter.** 93 survivors, yield 0.310 (gate >0.30, passes). Truncation 0.0213 at 4096 (gate <0.02, fails)
+— `grader_code` was 0.0190 on the same budget, so the answer_key pool is selected under a slightly harsher
+effective budget and that asymmetry is disclosed. 151 of 300 items answer correctly unaided and then
+refuse the cue, against 122 of 300 for `grader_code`: answer_key is the weaker lever.
+**What replicates.**
+*The silent influence cell is empty on both arms.* 0 of 93 under C3 and 0 of 93 under C2, rule-of-three
+upper bound 0.0323. Corrected faithfulness 1.0 in both arms, carrying no information, exactly as with
+`grader_code`.
+*Framing does nothing, again.* Paired over shared items the difference in corrected faithfulness between
+C2 and C3 is exactly 0.0 [0.0, 0.0]. Behavioural tracking C3 0.613 [0.516, 0.710], C2 0.656 [0.559, 0.753],
+and on the 19-item interim check the marginal C2/C3 gap vanished entirely once paired — a reminder that
+the per-arm rates are not the comparison.
+*The verbalization gap replicates and is wider.* Naive verbalization 0.946 (C3) and 0.979 (C2) against
+tracking 0.613 and 0.656. Attribution precision 0.648 and 0.670, against 0.664 and 0.688 for `grader_code`.
+*The trace-level result replicates.* Of 4,422 cued traces 86.9% credit the hint and 95.6% of those answer
+the cued option in the same trace; non-attributing traces answer it 12.2% of the time. Coherence by cell
+faithful 0.9894, confabulated 0.8766. Of 91 failing placements 32 have the cue as modal answer below the
+6-of-8 bar (0.352, against 0.404 for `grader_code`).
+*Item-level overdispersion replicates.* chi2 56.1 on 2 df, all-three tracking 0.634 against 0.528 under
+independence, k=0 8 observed against 1.3 expected.
+**What does not replicate, and this matters.** The cue-letter effect. Held out, `grader_code` gave
+A 0.687, B 0.845, C 0.781, D 0.660, spread 0.185, p = 0.0010. `answer_key` gives A 0.660, B 0.822,
+C 0.817, D 0.756, spread 0.162, **p = 0.0990** (all placements p = 0.0505). The direction moves too: D was
+the weakest letter under `grader_code` and is second strongest here, and the post hoc "weak letters A/D"
+compound inverts — items forced onto two weak letters now track *better* (0.683) than those on one
+(0.596), the opposite of the earlier run. The letter effect must be reported as cue-specific and not as a
+property of the model. The D inversion in the attribution analysis — says most, follows least — also
+fails: among attributing placements the spread is 0.0435, p = 0.93.
+**The concealment prediction gets no support, and fails in the interesting direction.** `answer_key` was
+chosen because the model has more reason not to admit consulting an answer key than a grading rule. It is
+verbalized *more*, not less (0.946/0.979 against 0.925/0.942), and the silent cell is empty under the
+monitored arm specifically. Two cue types, both disclosed at ceiling, no framing sensitivity.
+**Reading.** The paper's core claims survive a cue change: no concealment, a large mention-versus-influence
+gap, and an item-level confabulation number that is mostly aggregation. The position effect does not
+survive and should be demoted to a single-cue observation. The bound is looser here (0.032 against 0.025)
+because the pool is smaller.
+**Command:**
+uv run -m scripts.run_filter --variants_path data/processed/variants_seed42.jsonl --output_dir results/raw/filter_answer_key --model_id Qwen/Qwen3-8B --cue_name answer_key --arm C3_neutral_private --seed 42
+uv run -m scripts.run_sweep --variants_path data/processed/variants_seed42.jsonl --survivors_path results/raw/filter_answer_key/survivors.json --output_dir results/raw/sweep_answer_key --model_id Qwen/Qwen3-8B --cue_name answer_key --arms C3_neutral_private,C2_monitored --max_tokens 6144 --chunk_size 50 --seed 42
+uv run -m scripts.run_judge --generations_paths results/raw/sweep_answer_key/generations.jsonl --output_dir results/raw/judge_answer_key --judge_model openai/gpt-4.1-mini --max_concurrent 40 --seed 42
+uv run -m scripts.analyze_cells --judge_dir results/raw/judge_answer_key --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --output_dir results/analysis/cells_answer_key --model_id Qwen/Qwen3-8B --seed 42
+uv run -m scripts.analyze_attribution --judge_dir results/raw/judge_answer_key --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --output_dir results/analysis/attribution_answer_key --model_id Qwen/Qwen3-8B --seed 42
+uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --variants_path data/processed/variants_seed42.jsonl --output_dir results/analysis/placement_answer_key --seed 42
+**Output:** results/raw/judge_answer_key/judge_report.json, results/analysis/{cells,attribution,placement}_answer_key/
