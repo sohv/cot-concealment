@@ -1,8 +1,9 @@
 # Unverbalized Influence of Planted Cues in Chain-of-Thought
 
-*Target venue: Interpretability as a Science, NeurIPS 2026. Short paper, 5 pages, references and
-appendices excluded, non-archival. Double-blind: no author, affiliation, or repository identifiers
-anywhere in this file.*
+*Not submitted. This is the seed draft for the SPAR cohort to extend, kept because the Method, Results
+and Limitations sections are written and every number traces to a report file (Appendix B). Missing:
+abstract, compression to length, LaTeX conversion. The three citations are verified against real arXiv
+pages. See `docs/spar_handover.md` for what the pilot established and what it means for the main study.*
 
 ---
 
