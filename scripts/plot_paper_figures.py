@@ -52,6 +52,7 @@ def figure_one(data: dict, model_id: str, path: Path) -> dict:
     fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.4), sharey=True, gridspec_kw={"width_ratios": [3, 2]})
     out: dict = {}
     for ax, (cue, title, *_rest) in zip(axes, CUES):
+        # panel identity moves into the axis label, since the figure carries no titles.
         by_arm = data[cue]["cells"]["by_arm"]
         arms = [a for a in ("C0_bare", "C3_neutral_private", "C2_monitored") if a in by_arm]
         pos = np.arange(len(arms))
@@ -67,18 +68,14 @@ def figure_one(data: dict, model_id: str, path: Path) -> dict:
         ax.axhline(GATES.behavioral_tracking_min, color=MUTED, linestyle="--", linewidth=1)
         ax.set_xticks(pos)
         ax.set_xticklabels([ARM_LABEL[a] for a in arms])
-        ax.set_xlabel("Reasoning described as")
-        ax.set_title(title, fontsize=10)
+        ax.set_xlabel(f"Reasoning described as\n({title.lower()})")
         ax.spines[["top", "right"]].set_visible(False)
         ax.grid(axis="y", color="#ececec", linewidth=0.8)
         ax.set_axisbelow(True)
     axes[0].set_ylabel("Rate")
     axes[0].set_ylim(0, 1.08)
-    axes[0].text(-0.42, GATES.behavioral_tracking_min + 0.015, f"tracking gate {GATES.behavioral_tracking_min}",
-                 fontsize=7.5, color="#666666")
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, fontsize=9, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.04))
-    fig.suptitle(f"Saying the hint drove the answer, against the answer following it — {model_id}", fontsize=11)
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=200, bbox_inches="tight")
@@ -109,7 +106,6 @@ def figure_two(data: dict, model_id: str, path: Path) -> dict:
     ax.set_xticklabels(["Per item\n(the four-cell rule,\n24 samples aggregated)", "Per trace\n(same trace credits\nand answers)"])
     ax.set_ylabel("Credits the hint but does not follow it")
     ax.set_ylim(0, 0.46)
-    ax.set_title(f"Item-level scoring overstates confabulation — {model_id}\nsame quantity, two units of analysis", fontsize=10.5)
     ax.legend(fontsize=9, frameon=False, loc="upper right")
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="y", color="#ececec", linewidth=0.8)
@@ -140,7 +136,6 @@ def figure_three(data: dict, model_id: str, path: Path) -> dict:
     ax.set_yticklabels([f"{cell}\n{title.split(' ')[-1]}" for title, cell, *_ in rows], fontsize=8.5)
     ax.set_xlim(-0.10, 0.55)
     ax.set_xlabel("Change in rate of answering the hinted option when the mention is restored")
-    ax.set_title(f"Is the hint mention load-bearing? — {model_id}\nmention removed against mention kept, hint absent from the prompt", fontsize=10.5)
     ax.spines[["top", "right", "left"]].set_visible(False)
     ax.grid(axis="x", color="#ececec", linewidth=0.8)
     ax.set_axisbelow(True)

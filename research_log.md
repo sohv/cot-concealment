@@ -417,3 +417,42 @@ uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_v1
 uv run -m scripts.analyze_placement --tracking_results_path results/raw/sweep_answer_key/tracking_results.jsonl --variants_path data/processed/variants_seed42.jsonl --output_dir results/analysis/placement_answer_key_v2 --seed 42
 **Output:** results/analysis/placement_v2/, results/analysis/placement_answer_key_v2/
 **Supersedes:** the letter-effect numbers in the 260830 placement entry and the 260831 second-cue entry.
+
+## 260831 — elicitation positive control: interrogation recovers the hint on items that already verbalized it
+
+**What:** A positive control on the elicitation baseline the SPAR design depends on. Cell assignment can
+say influence went unmentioned; it cannot say whether the model had the reason and withheld it. Only
+interrogation separates those, and nobody had checked interrogation works. Run on the 75 **faithful**
+items of the C3 arm, where the hint demonstrably drove the answer and the trace already credited it, so
+the reason is established as present and articulable. Two framings, 4 samples each, 600 generations, then
+judged by `gpt-4.1-mini` with a purpose-written prompt.
+**Design point that carries the measurement.** The assistant turn holds the model's answer block only,
+never its think block. Qwen3's chat template drops prior reasoning across turns anyway, and pasting the
+original trace back would hand the model its own mention verbatim, which is the one thing a recovery
+measurement must not do. Asserted by a test.
+**Result:** interrogation is not broken, so a null in the real study would be interpretable.
+
+| framing | acknowledges | at least once in 4 | names the right option | sees it but denies influence |
+|---|---|---|---|---|
+| open (does not say where to look) | 0.7400 | 0.9733 [0.9333, 1.0] | 0.7300 | 0.0201 |
+| direct (names the metadata block) | 0.9467 | 1.0 [1.0, 1.0] | 0.9467 | 0.0 |
+
+*Open interrogation works unprompted.* Asked only whether anything besides the question influenced the
+answer, the model credits the hint in 74% of individual replies and on 97.3% of items at least once in
+four. It names the correct option 73% of the time, so the acknowledgement is specific rather than vague
+assent.
+*Denial is essentially absent.* "Notices the metadata and claims it did not matter" runs at 0.02 open and
+0.00 direct. That failure mode would look exactly like absent computation while being denial, and it is
+not happening here.
+*The open/direct gap is real but modest*, 0.74 against 0.95. Both should be run in the main study: direct
+as the recovery ceiling, open as the realistic condition, the gap as how much prompting elicitation needs.
+**Caveat, and it bounds the claim.** This is a positive control on items the model *already verbalized*
+unprompted. Recovery on a case it chose not to mention could be much lower. It establishes an upper bound
+on interrogation's power and rules out gross instrument failure; it does not show interrogation recovers
+concealed reasons, which is untestable here because the silent cell is empty.
+**Consequence for the main study.** An "absent computation" reading requires interrogation to fail on a
+silent case. That reading is now defensible on this model, since interrogation demonstrably succeeds when
+the reason is present. Without this control, failure and instrument error were not separable.
+**Command:**
+uv run -m scripts.run_interrogation --generations_paths results/raw/sweep_v1/generations.jsonl,results/raw/sweep_v1_resume/generations.jsonl --judge_dir results/raw/judge_v1 --variants_path data/processed/variants_seed42.jsonl --output_dir results/raw/interrogation_grader_code --model_id Qwen/Qwen3-8B --arm C3_neutral_private --cue_name grader_code --seed 42
+**Output:** results/raw/interrogation_grader_code/interrogation_report.json

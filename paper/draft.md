@@ -1,37 +1,48 @@
-# Mentioning a hint is not being driven by one: measuring verbalization at the trace level
+# Unverbalized Influence of Planted Cues in Chain-of-Thought
 
-*Working draft. Double-blind: no author, affiliation, or repository identifiers anywhere in this file.
-Citations are `[CITE: ...]` placeholders — each names what the reference must support. Verify every one
-against a real arXiv page before it goes in.*
+*Target venue: Interpretability as a Science, NeurIPS 2026. Short paper, 5 pages, references and
+appendices excluded, non-archival. Double-blind: no author, affiliation, or repository identifiers
+anywhere in this file.*
 
 ---
 
 ## 1. Introduction
 
-**[PLACEHOLDER — write last.]** The second-cue run is complete and the branch is settled: the silent cell
-is empty for both hints (§4.8), so this is the measurement paper of §4.6, with a two-cue negative
-supporting it and a causal validation (§4.7) that replicates across both. The introduction should not
-promise a concealment result.
+Chain-of-thought monitoring assumes the trace tells you why the model answered as it did. Turpin et al.
+[1] showed that assumption failing: bias a model with a reordered few-shot prompt so the answer is always
+(A), and it follows the bias while arguing for the answer on the merits, never mentioning the bias.
+Detecting that requires knowing what actually drove the answer, which a single trace cannot tell you.
 
-Points the introduction must make, in order:
+The design we study makes influence observable independently of mention. The same hint is planted on a
+different wrong option in each of three variants of an item. A model driven by the hint answers whichever
+option currently carries it; a model that merely narrates has no reason to follow it around. Crossing that
+behavioural signal against a judge's reading of the trace gives four cells — faithful, confabulated,
+silent influence, independent — and a correction factor for headline verbalization numbers.
 
-1. Chain-of-thought faithfulness is often graded by whether a trace *mentions* a planted hint.
-   `[CITE: the hint-mention protocol for CoT faithfulness]`
-2. A mention is evidence of influence only if mentions and influence coincide. They can come apart in two
-   directions: influence without mention (concealment) and mention without influence (confabulation).
-   `[CITE: post-hoc rationalization / confabulation in LLM explanations]`
-3. Nothing in a single-placement design separates them, because the hint sits in one place and either
-   gets mentioned or not.
-4. Our contribution: move the hint across placements within an item, so influence becomes observable
-   independently of mention; then show that the standard item-level scoring of the resulting four cells
-   systematically overstates confabulation relative to what any individual trace did.
-5. **Scope, and it must be stated in the abstract, not only here.** We do not reproduce the setting in
-   which unverbalized influence was originally reported, and we do not claim to refute it. Our hint is an
-   explicit metadata block rather than an implicit pattern across few-shot examples or a stated user
-   opinion; our model is a single 8B checkpoint in thinking mode rather than the models that finding was
-   established on; and our items are pre-selected for demonstrated cue influence rather than sampled
-   broadly. Every number here describes that regime. `[CITE: Turpin et al., unfaithful CoT explanations —
-   the mention-based protocol and the biasing features it uses]`
+That design is itself a measurement instrument. This paper asks whether it measures what it claims, and
+reports three ways it does not, each with a diagnosis and a fix, across two hint types and 213 items.
+
+**The target estimand is not identifiable in this regime.** Corrected faithfulness is
+faithful/(faithful + silent). The silent cell is empty under both hints and every framing arm, so the
+quantity the design exists to estimate is degenerate — 1.0 with a [1.0, 1.0] interval. We report a
+rule-of-three bound instead of a point estimate that carries no information.
+
+**The unit of analysis manufactures the headline.** Scored per item over 24 aggregated samples, "credits
+the hint but does not follow it" is 0.34. Scored per trace, it is 0.03. Forty percent of the item-level
+number is a 6-of-8 modal threshold biting on high-variance items rather than any model behaviour. The
+cells are largely measuring sample variance, not dishonesty.
+
+**A correlational label needs an intervention, and the obvious intervention does not work.** Cutting the
+trace before the sentence that mentions the hint is null by construction while the hint remains in the
+prompt, because the cut removes a restatement rather than the thing itself. Removing the hint from the
+prompt as well — in the interventional tradition of Lanham et al. [2] — separates the cells: restoring the
+mention moves the answer on faithful items (+0.155, +0.165) and not on confabulated ones.
+
+**Scope, and it belongs in the abstract.** We do not reproduce the setting in which unverbalized influence
+was reported, and we do not claim to refute it. Our hint is an explicit metadata block rather than an
+implicit pattern across few-shot examples; our model is a single 8B checkpoint in thinking mode; our items
+are pre-selected for demonstrated cue influence. Every number describes that regime. The contribution is
+about the measurement, not about whether models are faithful.
 
 ---
 
@@ -196,41 +207,29 @@ are arm-invariant: 66 of 120 track in all three arms, 38 in none. Mean reasoning
 across arms.
 
 Telling the model its reasoning is recorded and reviewed changes neither its behaviour nor its
-verbalization. `[CITE: prior work assuming or finding monitoring-sensitivity in CoT]`
+verbalization. Monitoring pressure is known to change what traces contain when applied as a training
+signal [3]; a framing stated at inference time is a far weaker manipulation, and here it does nothing.
 
 ### 4.3 Where the gate failure comes from
 
 Two separable causes, neither of them framing.
 
-**Tracking is a property of the item, not a per-placement coin flip.** The distribution of
-placements-tracking-per-item is strongly overdispersed against a binomial at the same mean (χ² = 128.9,
-2 df): 19 items track at no placement against 3.2 expected, 223 at all three against 179.2. All-three
-tracking is 0.619 where independence predicts 0.498. A fixed subpopulation never tracks under any arm or
-placement, and the all-three requirement compounds a per-placement rate of ~0.75 down to 0.62.
+**Tracking is a property of the item, not a per-placement coin flip.** Placements-tracking-per-item is
+strongly overdispersed against a binomial at the same mean (χ² = 128.9, 2 df; all-three tracking 0.619
+where independence predicts 0.498). A fixed subpopulation never tracks under any arm or placement, and
+the all-three requirement compounds a per-placement rate of ~0.75 down to 0.62.
 
-**Tracking depends on which letter carries the hint.** Held out: B 0.845 and C 0.781 against A 0.687 and
-D 0.660. The permutation shuffles an item's own three letters over its own three outcomes, which is
-exactly the null the seeded distractor map creates, so this is within-item and cannot be item composition.
-The item's *correct* letter is flat (0.755 to 0.812), so it is the cued position rather than difficulty by
-answer position.
-
-Two statistical points, both of which weaken the effect from how we first measured it.
-
-*The randomization unit is the item, not the item-arm pair.* The distractor map is keyed on the item
-alone, so an item's arm replicates carry identical letters and their outcomes agree 87.8% of the time.
-Permuting per replicate treats 360 correlated rows as 360 independent units and is anti-conservative by
-roughly the arm count. Permuting once per item and broadcasting to its replicates gives spread p = 0.0130
-held out and p = 0.0070 over all placements — an order of magnitude weaker than the per-replicate
-computation, which is what we originally reported.
-
-*Max-minus-min is the wrong statistic.* It keys entirely on the two extreme letters and discards the
-pattern, so it is underpowered against a grouped effect and unstable in which letters it selects. The
-single-degree-of-freedom contrast, B/C minus A/D on the same item-level null, is **+0.1351, p = 0.0047**
-held out (+0.0968, p = 0.0014 over all placements). The A/D grouping is post hoc on this cue — it was
-named after reading these rates — and is therefore tested confirmatorily on the second cue in §4.8.
+**Tracking depends on which letter carries the hint**, though less strongly than it first appeared. Held
+out, B 0.845 and C 0.781 against A 0.687 and D 0.660. Two statistical points matter and both weaken the
+effect: the randomization unit is the item rather than the item-arm pair, since the distractor map is
+keyed on the item alone and its arm replicates agree 87.8% of the time; and max-minus-min over four
+letters keys on the extremes and discards the pattern. On the item-level null, the single-degree-of-freedom
+contrast B/C minus A/D is +0.1351, p = 0.0047 held out. The grouping is post hoc here and is tested
+confirmatorily on the second hint (§4.8). Appendix C carries the per-letter tables, both permutation tests
+and the compound breakdown.
 
 The two fresh placements are indistinguishable (V2 0.750, V3 0.739) against V1 at 0.889, so there is no
-decay across successive swaps — the V1 excess is the winner's curse from selecting items on V1, exactly as
+decay across successive swaps — the V1 excess is the winner's curse from selecting items on V1, as
 preregistered.
 
 ### 4.4 The silent influence cell is empty
@@ -266,8 +265,9 @@ reading is wrong.**
 ![Figure 1](figures/fig1_verbalization_gap.png)
 
 **Figure 1.** What a mention-checking grader reports (orange) against what the answer actually does as the
-hint moves (blue), for both hints and every framing arm. The dashed line is the preregistered 0.70
-tracking gate. The gap is 0.28–0.37 and is present in every arm of both hints; describing the reasoning as
+hint moves (blue). Left panel: hint states the grading rule, three framing arms. Right panel: hint states
+the answer, two arms. Error bars are item-level bootstrap 95% intervals. The dashed line is the
+preregistered 0.70 tracking gate. The gap is 0.28–0.37 and is present in every arm of both hints; describing the reasoning as
 monitored rather than private does not close it.
 
 
@@ -344,8 +344,10 @@ the prompt hint is the dominant driver and the mention is a secondary causal con
 ![Figure 3](figures/fig3_prefill_ablation.png)
 
 **Figure 3.** The prefill ablation with the hint stripped from the prompt, so the trace is the only place
-it appears. Restoring the mention moves the answer on faithful items and not on confabulated ones, in both
-hints. Intervals are item-level bootstrap; blue marks intervals excluding zero.
+it appears. Rows are cell × hint; the point is the mean change in the rate of answering the hinted option
+when the mention is restored, with item-level bootstrap 95% intervals. Blue marks intervals excluding
+zero. Restoring the mention moves the answer on faithful items and not on confabulated ones, in both
+hints.
 
 
 
@@ -450,8 +452,6 @@ trace it was built from.
 
 ## 6. Conclusion
 
-**[PLACEHOLDER — write last, with §1.]**
-
 The claim to land: item-level cell assignment over aggregated samples systematically overstates
 confabulation relative to what any individual trace did, and a four-cell design should report the
 trace-level number beside the item-level one. The causal check confirms the split is real but shows the
@@ -464,6 +464,19 @@ which is itself useful to anyone designing one — not that there is nothing to 
 
 ---
 
+## References
+
+[1] M. Turpin, J. Michael, E. Perez, S. R. Bowman. *Language Models Don't Always Say What They Think:
+Unfaithful Explanations in Chain-of-Thought Prompting.* arXiv:2305.04388, 2023.
+
+[2] T. Lanham, A. Chen, A. Radhakrishnan, et al. *Measuring Faithfulness in Chain-of-Thought Reasoning.*
+arXiv:2307.13702, 2023.
+
+[3] B. Baker, J. Huizinga, et al. *Monitoring Reasoning Models for Misbehavior and the Risks of Promoting
+Obfuscation.* arXiv:2503.11926, 2025.
+
+---
+
 ## Appendix A — what to cut for five pages
 
 The body above is longer than five pages. Suggested priority:
@@ -471,9 +484,7 @@ The body above is longer than five pages. Suggested priority:
 - **Keep in full:** §2.1–2.2, §2.6–2.8, §3, §4.4, §4.5, §4.6, §4.7, §4.8, §5.
 - **Compress to a paragraph:** §4.1 and §4.2 (the gate miss and the framing null are one paragraph each;
   the framing null is genuinely one sentence plus a table row).
-- **Compress to a short subsection, rest to appendix:** §4.3. Keep the overdispersion figure and the
-  single dissociation number from §4.6 (says-most-at-D, follows-least-at-D); move the full per-letter
-  tables and the permutation details out.
+- **Done:** §4.3 compressed, full per-letter tables and permutation detail moved to Appendix C.
 - **Figures, three, already built** (`paper/figures/`, one per result, both hints on every panel): the
   verbalization gap (§4.5), item-level against trace-level (§4.6), and the prefill ablation (§4.7). Any
   position-effect figure goes to the appendix.
@@ -496,3 +507,39 @@ Every number in this draft traces to a file on disk.
 | Figures 1–3 | `paper/figures/`, values in `paper/figures/paper_figure_values.json` |
 | Second cue (§4.8) | `results/analysis/cells_answer_key/`, `attribution_answer_key_v2/`, `placement_answer_key_v2/`, `results/raw/prefill_answer_key_nocue/` |
 | Corrected letter tests | `results/analysis/placement_v2/`, `results/analysis/attribution_v2/` |
+
+---
+
+## Appendix C — position effect, full detail
+
+**Tracking is a property of the item, not a per-placement coin flip.** The distribution of
+placements-tracking-per-item is strongly overdispersed against a binomial at the same mean (χ² = 128.9,
+2 df): 19 items track at no placement against 3.2 expected, 223 at all three against 179.2. All-three
+tracking is 0.619 where independence predicts 0.498. A fixed subpopulation never tracks under any arm or
+placement, and the all-three requirement compounds a per-placement rate of ~0.75 down to 0.62.
+
+**Tracking depends on which letter carries the hint.** Held out: B 0.845 and C 0.781 against A 0.687 and
+D 0.660. The permutation shuffles an item's own three letters over its own three outcomes, which is
+exactly the null the seeded distractor map creates, so this is within-item and cannot be item composition.
+The item's *correct* letter is flat (0.755 to 0.812), so it is the cued position rather than difficulty by
+answer position.
+
+Two statistical points, both of which weaken the effect from how we first measured it.
+
+*The randomization unit is the item, not the item-arm pair.* The distractor map is keyed on the item
+alone, so an item's arm replicates carry identical letters and their outcomes agree 87.8% of the time.
+Permuting per replicate treats 360 correlated rows as 360 independent units and is anti-conservative by
+roughly the arm count. Permuting once per item and broadcasting to its replicates gives spread p = 0.0130
+held out and p = 0.0070 over all placements — an order of magnitude weaker than the per-replicate
+computation, which is what we originally reported.
+
+*Max-minus-min is the wrong statistic.* It keys entirely on the two extreme letters and discards the
+pattern, so it is underpowered against a grouped effect and unstable in which letters it selects. The
+single-degree-of-freedom contrast, B/C minus A/D on the same item-level null, is **+0.1351, p = 0.0047**
+held out (+0.0968, p = 0.0014 over all placements). The A/D grouping is post hoc on this cue — it was
+named after reading these rates — and is therefore tested confirmatorily on the second cue in §4.8.
+
+The two fresh placements are indistinguishable (V2 0.750, V3 0.739) against V1 at 0.889, so there is no
+decay across successive swaps — the V1 excess is the winner's curse from selecting items on V1, exactly as
+preregistered.
+

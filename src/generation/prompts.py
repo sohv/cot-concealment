@@ -100,6 +100,14 @@ def build_chat(tok, system: str, user_message: str) -> str:
     )
 
 
+def build_chat_from_messages(tok, messages: list[dict]) -> str:
+    """multi-turn variant of build_chat, for the interrogation control's system/user/assistant/user turn
+    stack. every turn is soft-switch checked, since an assistant turn is model text and not a frozen string."""
+    for message in messages:
+        assert_no_soft_switch(message["content"])
+    return tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=True)
+
+
 def prompt_fingerprint(arm: str, cue_name: str = "reviewer_note") -> str:
     """hashes the frozen strings for an arm so a mid run edit is detectable in the output records."""
     payload = "\n".join([arm, ARMS[arm], cue_name, CUE_BLOCKS[cue_name], USER_TEMPLATE])
